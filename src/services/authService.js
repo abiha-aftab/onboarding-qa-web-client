@@ -52,36 +52,31 @@ const clearAuth = () => {
  * The apiClient instance handles baseURL, headers, and interceptors automatically
  */
 const apiRequest = async (endpoint, options = {}) => {
-  try {
-    // Extract method and data from options
-    const method = options.method || 'GET'
-    let data = options.data
+  // Extract method and data from options
+  const method = options.method || 'GET'
+  let data = options.data
 
-    // Handle legacy 'body' option (for backward compatibility)
-    if (options.body && !data) {
-      data = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
-    }
-
-    // Build request config - exclude 'body' and 'method' from options spread
-    const { body, ...restOptions } = options
-
-    // Use axios instance which handles baseURL, auth headers, and error handling
-    // apiClient.request() is the standard way to make requests with axios instances
-    const response = await apiClient.request({
-      url: endpoint,
-      method: method,
-      data: data,
-      ...restOptions, // Spread other options (headers, params, etc.) but not 'body'
-    })
-
-    // Axios automatically parses JSON responses
-    // Return data property which contains the response body
-    return response.data
-  } catch (error) {
-    // Error handling is done in apiClient interceptor
-    // Re-throw to maintain existing error handling flow
-    throw error
+  // Handle legacy 'body' option (for backward compatibility)
+  if (options.body && !data) {
+    data = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
   }
+
+  // Build request config - exclude 'body' and 'method' from options spread
+  const { body: _body, method: _method, ...restOptions } = options
+
+  // Use axios instance which handles baseURL, auth headers, and error handling
+  // apiClient.request() is the standard way to make requests with axios instances
+  // Error handling is done in apiClient interceptor
+  const response = await apiClient.request({
+    url: endpoint,
+    method: method,
+    data: data,
+    ...restOptions, // Spread other options (headers, params, etc.) but not 'body'
+  })
+
+  // Axios automatically parses JSON responses
+  // Return data property which contains the response body
+  return response.data
 }
 
 /**
