@@ -39,14 +39,14 @@ body {
 }
 
 .btn-primary {
-  background-color: #FFD350;
-  color: #0F5E7B;
+  background-color: #ffd350;
+  color: #0f5e7b;
   transition: all 0.3s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #0F5E7B;
-  color: #FFFFFF;
+  background-color: #0f5e7b;
+  color: #ffffff;
 }
 
 .btn-primary:disabled {
@@ -60,13 +60,13 @@ body {
 }
 
 .link-secondary:hover {
-  color: #0F5E7B;
+  color: #0f5e7b;
 }
 
 /* Prevent text wrapping in form elements */
-input[type="email"],
-input[type="password"],
-input[type="text"] {
+input[type='email'],
+input[type='password'],
+input[type='text'] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -85,7 +85,7 @@ label {
 }
 
 /* Ensure logo scales proportionally */
-img[alt="Limitless Horizons Logo"] {
+img[alt='Limitless Horizons Logo'] {
   object-fit: contain;
   height: auto;
 }
