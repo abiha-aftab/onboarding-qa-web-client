@@ -89,11 +89,79 @@ The production build will be in the `dist` directory.
 npm run preview
 ```
 
-## 🧪 Linting
+## 🧪 Linting and Formatting
+
+### Linting
 
 ```bash
+# Check for linting errors
 npm run lint
+
+# Auto-fix linting errors
+npm run lint:fix
 ```
+
+### Formatting
+
+```bash
+# Format all files
+npm run format
+
+# Check formatting without making changes
+npm run format:check
+```
+
+### Combined Checks
+
+```bash
+# Run both linting and format checks
+npm run check
+
+# Auto-fix both linting and formatting issues
+npm run check:fix
+```
+
+### Code Quality Tools
+
+- **ESLint** - Code linting with React and React Hooks rules
+- **Prettier** - Code formatting with consistent style
+- **GitHub Actions CI** - Automated checks on pull requests
+
+The project uses ESLint for code quality and Prettier for formatting. Both are configured to work together without conflicts.
+
+## 🔄 Continuous Integration
+
+This project uses GitHub Actions for CI/CD:
+
+### CI Workflow
+
+The CI workflow (`.github/workflows/ci.yml`) runs on:
+
+- Pull requests to `main` or `develop` branches
+- Pushes to `main` or `develop` branches
+
+**Checks performed:**
+
+- ESLint validation
+- Prettier formatting check
+- Build verification
+
+### Branch Protection Setup
+
+To ensure PRs can't merge until checks pass:
+
+1. Go to your repository → **Settings** → **Branches**
+2. Click **Add rule** or edit existing rule for `main` branch
+3. Enable **Require status checks to pass before merging**
+4. Select the required checks:
+   - `lint-and-format` (from CI workflow)
+   - `build-and-deploy` (from deploy workflow)
+5. Optionally enable:
+   - **Require branches to be up to date before merging**
+   - **Require pull request reviews before merging**
+6. Click **Save changes**
+
+Now PRs will be blocked from merging if linting, formatting, or build checks fail.
 
 ## 📤 Deployment
 
@@ -107,6 +175,7 @@ This project is configured for automatic deployment to GitHub Pages via GitHub A
    - Save
 
 2. **Push to main branch:**
+
    ```bash
    git add .
    git commit -m "Deploy to GitHub Pages"
@@ -115,10 +184,16 @@ This project is configured for automatic deployment to GitHub Pages via GitHub A
 
 3. **Check deployment:**
    - Go to Actions tab in GitHub
-   - Wait for the workflow to complete
+   - The workflow will automatically:
+     - Run linting checks
+     - Check code formatting
+     - Build the project
+     - Deploy to GitHub Pages
    - Your site will be available at: `https://[username].github.io/[repository-name]/`
 
 **Note:** The `base` path in `vite.config.js` is currently set to `/react/`. Update it to match your repository name if different.
+
+**Important:** The deploy workflow includes linting and formatting checks. If these fail, the deployment will not proceed.
 
 ## 📁 Project Structure
 
@@ -147,6 +222,7 @@ reat/
 ### Vite Configuration
 
 The `vite.config.js` file contains:
+
 - Base path for GitHub Pages deployment
 - React plugin configuration
 - Tailwind CSS plugin
@@ -167,10 +243,9 @@ Define variables in `src/index.css`:
 ```
 
 Use them directly:
+
 ```jsx
-<div style={{ backgroundColor: 'var(--color-primary)' }}>
-  Content
-</div>
+<div style={{ backgroundColor: 'var(--color-primary)' }}>Content</div>
 ```
 
 #### Method 2: @theme Directive (Tailwind v4)
@@ -185,10 +260,9 @@ Define theme values in `src/index.css`:
 ```
 
 Use as Tailwind utilities:
+
 ```jsx
-<div className="bg-brand-primary p-custom-md">
-  Content
-</div>
+<div className="bg-brand-primary p-custom-md">Content</div>
 ```
 
 #### Method 3: Extend Theme in Config
@@ -222,6 +296,7 @@ The app uses token-based authentication with Django backend:
 ## 📝 API Client
 
 The `apiClient.js` provides a centralized Axios instance with:
+
 - Automatic base URL configuration from environment variables
 - Request interceptor for adding authentication tokens
 - Response interceptor for error handling
@@ -230,6 +305,7 @@ The `apiClient.js` provides a centralized Axios instance with:
 ## 🎨 Styling
 
 The app uses a custom color scheme:
+
 - Primary: `#0F5E7B` (Dark teal)
 - Accent: `#FFD350` (Yellow)
 - Background: Gradient from `#61C8D0` to `#FFE596`
