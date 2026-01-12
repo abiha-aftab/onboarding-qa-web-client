@@ -1,3 +1,135 @@
+import apiClient from './apiClient';
+
+const getToken = () => {
+  return localStorage.getItem('authToken');
+};
+
+const setToken = (token) => {
+  if (token) {
+    localStorage.setItem('authToken', token);
+  } else {
+    localStorage.removeItem('authToken');
+  }
+};
+
+const getUser = () => {
+  const userStr = localStorage.getItem('user');
+  return userStr ? JSON.parse(userStr) : null;
+};
+
+const setUser = (user) => {
+  if (user) {
+    localStorage.setItem('user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('user');
+  }
+};
+
+const clearAuth = () => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+};
+
+const apiRequest = async (endpoint, options = {}) => {
+  try {
+    const method = options.method || 'GET';
+    let data = options.data;
+    
+    if (options.body && !data) {
+      data = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+    }
+    
+    const { body, ...restOptions } = options;
+    
+    const response = await apiClient.request({
+      url: endpoint,
+      method: method,
+      data: data,
+      ...restOptions,
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const login = async (email, password) => {
+  try {
+    const data = await apiRequest('/api/user/login/', {
+      method: 'POST',
+      data: { email, password },
+    });
+
+    if (data.access) {
+      setToken(data.access);
+      if (data.refresh) {
+        localStorage.setItem('refreshToken', data.refresh);
+      }
+    }
+
+    const userData = {
+      id: data.user_id,
+      email: data.email || email,
+      role: data.role,
+    };
+    setUser(userData);
+
+    return { ...data, user: userData };
+  } catch (error) {
+    clearAuth();
+    throw error;
+  }
+};
+
+export const logout = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (refreshToken) {
+      await apiRequest('/api/user/logout/', {
+        method: 'POST',
+        data: { refresh: refreshToken },
+      });
+    }
+  } catch (error) {
+    console.error('Logout API error:', error);
+  } finally {
+    clearAuth();
+    localStorage.removeItem('refreshToken');
+  }
+};
+
+export const getMe = async () => {
+  try {
+    const data = await apiRequest('/api/user/me/', {
+      method: 'GET',
+    });
+
+    if (data.id || data.email) {
+      setUser(data);
+    }
+
+    return data;
+  } catch (error) {
+    if (error.status === 401) {
+      clearAuth();
+      localStorage.removeItem('refreshToken');
+    }
+    throw error;
+  }
+};
+
+export const isAuthenticated = () => {
+  return !!getToken();
+};
+
+export const getCurrentUser = () => {
+  return getUser();
+};
+
+
 // Import centralized axios instance
 import apiClient from './apiClient'
 

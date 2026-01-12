@@ -42,7 +42,7 @@ function App() {
     checkAuth()
   }, [])
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -58,7 +58,6 @@ function App() {
       setPassword('')
     } catch (err) {
       let errorMsg = 'Failed to login. Please check your credentials.'
-
       if (err.status === 401) {
         errorMsg = 'Invalid email or password. Please try again.'
       } else if (err.status === 400) {
@@ -70,7 +69,6 @@ function App() {
       } else if (err.data?.error) {
         errorMsg = err.data.error
       }
-
       setError(errorMsg)
       setIsLoggedIn(false)
       setUser(null)
