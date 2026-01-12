@@ -1,34 +1,34 @@
-import { useField } from 'formik'
+import { useField } from 'formik';
 
 function DynamicField({ question }) {
-  const fieldName = `question_${question.id}`
-  const [field, meta, helpers] = useField(fieldName)
+  const fieldName = `question_${question.id}`;
+  const [field, meta, helpers] = useField(fieldName);
 
-  const handleChange = e => {
-    const { value, checked, files } = e.target
+  const handleChange = (e) => {
+    const { value, checked, files } = e.target;
 
     switch (question.answer_type) {
       case 'number':
-        helpers.setValue(value === '' ? '' : Number(value))
-        break
+        helpers.setValue(value === '' ? '' : Number(value));
+        break;
       case 'boolean':
-        helpers.setValue(checked)
-        break
+        helpers.setValue(checked);
+        break;
       case 'file':
-        helpers.setValue(files?.[0] || null)
-        break
+        helpers.setValue(files?.[0] || null);
+        break;
       default:
-        helpers.setValue(value)
+        helpers.setValue(value);
     }
-  }
+  };
 
   const renderInput = () => {
     const baseInputClasses = `w-full px-4 py-3 text-base bg-white border-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFD350] focus:border-[#0F5E7B] transition-all duration-200 ${
       meta.touched && meta.error ? 'border-red-500' : 'border-gray-200'
-    } hover:border-gray-300`
+    } hover:border-gray-300`;
 
-    const inputStyle = { color: '#0F5E7B', fontSize: '1rem' }
-    const placeholder = `Enter ${question.question_text.toLowerCase()}`
+    const inputStyle = { color: '#0F5E7B', fontSize: '1rem' };
+    const placeholder = `Enter ${question.question_text.toLowerCase()}`;
 
     switch (question.answer_type) {
       case 'text':
@@ -47,7 +47,7 @@ function DynamicField({ question }) {
             aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
             aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
           />
-        )
+        );
 
       case 'number':
         return (
@@ -65,7 +65,7 @@ function DynamicField({ question }) {
             aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
             aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
           />
-        )
+        );
 
       case 'date':
         return (
@@ -82,7 +82,7 @@ function DynamicField({ question }) {
             aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
             aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
           />
-        )
+        );
 
       case 'boolean':
         return (
@@ -107,7 +107,7 @@ function DynamicField({ question }) {
               {question.question_text}
             </label>
           </div>
-        )
+        );
 
       case 'file':
         return (
@@ -130,7 +130,7 @@ function DynamicField({ question }) {
               </p>
             )}
           </div>
-        )
+        );
 
       default:
         return (
@@ -148,9 +148,9 @@ function DynamicField({ question }) {
             aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
             aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
           />
-        )
+        );
     }
-  }
+  };
 
   return (
     <div className="space-y-2">
@@ -162,9 +162,7 @@ function DynamicField({ question }) {
         >
           {question.question_text}
           {question.is_required && (
-            <span className="text-red-500 ml-1" aria-label="required">
-              *
-            </span>
+            <span className="text-red-500 ml-1" aria-label="required">*</span>
           )}
         </label>
       )}
@@ -180,7 +178,7 @@ function DynamicField({ question }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default DynamicField
+export default DynamicField;
