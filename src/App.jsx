@@ -49,26 +49,18 @@ function App() {
 
     try {
       const response = await login(email, password)
-
       const currentUser = getCurrentUser()
       setUser(currentUser || { email: response.email || response.user?.email || email })
       setIsLoggedIn(true)
-
       setEmail('')
       setPassword('')
     } catch (err) {
       let errorMsg = 'Failed to login. Please check your credentials.'
-      if (err.status === 401) {
-        errorMsg = 'Invalid email or password. Please try again.'
-      } else if (err.status === 400) {
-        errorMsg = err.data?.message || err.message || 'Please check your input and try again.'
-      } else if (err.message) {
-        errorMsg = err.message
-      } else if (err.data?.message) {
-        errorMsg = err.data.message
-      } else if (err.data?.error) {
-        errorMsg = err.data.error
-      }
+      if (err.status === 401) errorMsg = 'Invalid email or password. Please try again.'
+      else if (err.status === 400) errorMsg = err.data?.message || err.message || 'Please check your input and try again.'
+      else if (err.message) errorMsg = err.message
+      else if (err.data?.message) errorMsg = err.data.message
+      else if (err.data?.error) errorMsg = err.data.error
       setError(errorMsg)
       setIsLoggedIn(false)
       setUser(null)
@@ -95,53 +87,32 @@ function App() {
 
   if (checkingAuth) {
     return (
-      <div
-        className="min-h-screen w-full flex items-center justify-center"
-        style={{ background: 'linear-gradient(180deg ,#61C8D0,#FFE596)' }}
-      >
+      <div className="min-h-screen w-full flex items-center justify-center" style={{ background: 'linear-gradient(180deg ,#61C8D0,#FFE596)' }}>
         <div className="text-center">
-          <div className="text-xl font-semibold" style={{ color: '#0F5E7B' }}>
-            Loading...
-          </div>
+          <div className="text-xl font-semibold" style={{ color: '#0F5E7B' }}>Loading...</div>
         </div>
       </div>
     )
   }
 
-  if (isLoggedIn) {
-    return <Dashboard user={user} onLogout={handleLogout} />
-  }
+  if (isLoggedIn) return <Dashboard user={user} onLogout={handleLogout} />
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center"
-      style={{ background: 'linear-gradient(180deg ,#61C8D0,#FFE596)' }}
-    >
+    <div className="min-h-screen w-full flex items-center justify-center" style={{ background: 'linear-gradient(180deg ,#61C8D0,#FFE596)' }}>
       <div className="w-full flex items-center justify-center py-8 px-4">
         <div className="w-full max-w-[400px] mx-auto space-y-6">
           <div className="text-center mb-6">
-            <img
-              src={logo}
-              alt="Limitless Horizons Logo"
-              className="h-20 mx-auto mb-3 w-auto max-w-[220px]"
-            />
+            <img src={logo} alt="Limitless Horizons Logo" className="h-20 mx-auto mb-3 w-auto max-w-[220px]" />
           </div>
 
           <div className="bg-white rounded-xl shadow-2xl p-10 w-full">
-            <h1
-              className="text-2xl font-bold mb-4 whitespace-nowrap text-center"
-              style={{ color: '#0F5E7B', fontSize: '1.5rem' }}
-            >
+            <h1 className="text-2xl font-bold mb-4 whitespace-nowrap text-center" style={{ color: '#0F5E7B', fontSize: '1.5rem' }}>
               Welcome back
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-5 mt-6">
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-base font-semibold mb-3 tracking-tight whitespace-nowrap"
-                  style={{ color: '#0F5E7B', fontSize: '1rem' }}
-                >
+                <label htmlFor="email" className="block text-base font-semibold mb-3 tracking-tight whitespace-nowrap" style={{ color: '#0F5E7B', fontSize: '1rem' }}>
                   Email Address
                 </label>
                 <input
@@ -152,22 +123,12 @@ function App() {
                   onChange={e => setEmail(e.target.value)}
                   required
                   className="w-full px-4 py-3.5 text-base bg-white border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFD350] focus:border-[#0F5E7B] transition-all duration-200 placeholder-gray-400 hover:border-gray-300"
-                  style={{
-                    color: '#0F5E7B',
-                    fontSize: '1rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
+                  style={{ color: '#0F5E7B', fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                 />
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-base font-semibold mb-3 tracking-tight whitespace-nowrap"
-                  style={{ color: '#0F5E7B', fontSize: '1rem' }}
-                >
+                <label htmlFor="password" className="block text-base font-semibold mb-3 tracking-tight whitespace-nowrap" style={{ color: '#0F5E7B', fontSize: '1rem' }}>
                   Password
                 </label>
                 <input
@@ -178,40 +139,19 @@ function App() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   className="w-full px-4 py-3.5 text-base bg-white border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFD350] focus:border-[#0F5E7B] transition-all duration-200 placeholder-gray-400 hover:border-gray-300"
-                  style={{
-                    color: '#0F5E7B',
-                    fontSize: '1rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
+                  style={{ color: '#0F5E7B', fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                 />
               </div>
 
-              {error && (
-                <div className="bg-red-100 border-2 border-red-300 text-red-800 text-sm text-center py-3 px-4 rounded-lg shadow-sm">
-                  {error}
-                </div>
-              )}
+              {error && <div className="bg-red-100 border-2 border-red-300 text-red-800 text-sm text-center py-3 px-4 rounded-lg shadow-sm">{error}</div>}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`btn-primary w-full py-3.5 px-6 rounded-lg text-base font-bold shadow-md hover:shadow-lg ${
-                  loading ? '' : 'hover:scale-[1.02] active:scale-[0.98]'
-                }`}
-                style={{ fontSize: '1rem' }}
-              >
+              <button type="submit" disabled={loading} className={`btn-primary w-full py-3.5 px-6 rounded-lg text-base font-bold shadow-md hover:shadow-lg ${loading ? '' : 'hover:scale-[1.02] active:scale-[0.98]'}`} style={{ fontSize: '1rem' }}>
                 {loading ? 'Logging in...' : 'Log In'}
               </button>
             </form>
 
             <div className="mt-7 text-center">
-              <a
-                href="#"
-                className="link-secondary text-sm font-semibold hover:underline"
-                style={{ fontSize: '0.875rem' }}
-              >
+              <a href="#" className="link-secondary text-sm font-semibold hover:underline" style={{ fontSize: '0.875rem' }}>
                 Forgot your password?
               </a>
             </div>
@@ -238,10 +178,7 @@ function Dashboard({ user, onLogout }) {
               <span style={{ color: '#0F5E7B' }}>
                 Welcome, <span className="font-semibold">{user?.email}</span>
               </span>
-              <button
-                onClick={onLogout}
-                className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold shadow-md"
-              >
+              <button onClick={onLogout} className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
                 Logout
               </button>
             </div>
@@ -293,23 +230,15 @@ function Dashboard({ user, onLogout }) {
             <div className="flex items-center gap-4 p-4 bg-teal-50 rounded-lg">
               <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
               <div className="flex-1">
-                <p className="font-medium" style={{ color: '#0F5E7B' }}>
-                  Login successful
-                </p>
-                <p className="text-sm" style={{ color: '#576472' }}>
-                  Just now
-                </p>
+                <p className="font-medium" style={{ color: '#0F5E7B' }}>Login successful</p>
+                <p className="text-sm" style={{ color: '#576472' }}>Just now</p>
               </div>
             </div>
             <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-lg">
               <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
               <div className="flex-1">
-                <p className="font-medium" style={{ color: '#0F5E7B' }}>
-                  Account accessed
-                </p>
-                <p className="text-sm" style={{ color: '#576472' }}>
-                  Today
-                </p>
+                <p className="font-medium" style={{ color: '#0F5E7B' }}>Account accessed</p>
+                <p className="text-sm" style={{ color: '#576472' }}>Today</p>
               </div>
             </div>
           </div>

@@ -439,7 +439,7 @@ function Dashboard({ user, onLogout }) {
               <div className="mt-6">
                 <MultiStepForm
                   steps={selectedOnboarding.steps}
-                  onSubmit={async (values) => {
+                  onSubmit={async () => {
                     try {
                       setSubmitStatus({ type: null, message: '' });
                       

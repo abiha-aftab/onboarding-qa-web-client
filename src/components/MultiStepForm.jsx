@@ -212,8 +212,6 @@ function MultiStepForm({
 
         setIsSubmitted(true);
         setSubmittedValues(formData);
-      } catch (error) {
-        throw error;
       } finally {
         setSubmitting(false);
       }
