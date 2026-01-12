@@ -1,17 +1,5 @@
 import axios from 'axios'
 
-/**
- * Centralized Axios instance for API requests
- *
- * This instance is configured with:
- * - Base URL from environment variables (VITE_API_URL)
- * - Default headers for JSON content
- * - Request interceptor to add authentication token
- * - Response interceptor for error handling and logging
- */
-
-// Get base URL from environment variable
-// Vite uses VITE_ prefix for environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 /**
@@ -25,10 +13,6 @@ const apiClient = axios.create({
   timeout: 10000, // 10 seconds timeout
 })
 
-/**
- * Request interceptor: Add authentication token to requests
- * Automatically attaches Bearer token from localStorage if available
- */
 apiClient.interceptors.request.use(
   config => {
     const token = localStorage.getItem('authToken')
