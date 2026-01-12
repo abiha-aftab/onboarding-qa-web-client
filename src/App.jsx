@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import logo from './assets/68d68d4834b714f5ba55664d_Frame 2121450324.svg'
 import { login, logout, getMe, getCurrentUser, isAuthenticated } from './services/authService'
+import { getOnboardingStatus, getPendingOnboardings, fetchUserOnboardings, fetchOnboardingStep } from './services/onboardingService'
+import MultiStepForm from './components/MultiStepForm'
 
 function App() {
   const [email, setEmail] = useState('')
@@ -163,22 +165,60 @@ function App() {
 }
 
 function Dashboard({ user, onLogout }) {
+  const [onboardingStatus, setOnboardingStatus] = useState(null)
+  const [pendingOnboardings, setPendingOnboardings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedOnboarding, setSelectedOnboarding] = useState(null)
+  const [submitStatus, setSubmitStatus] = useState({ type: null, message: '' })
+
+  useEffect(() => {
+    const loadOnboardingData = async () => {
+      if (user?.email) {
+        setLoading(true)
+        try {
+          const status = await getOnboardingStatus()
+          setOnboardingStatus(status)
+          const pending = await getPendingOnboardings()
+          setPendingOnboardings(pending)
+        } catch (error) {
+          console.error('Error loading onboarding data:', error)
+          setOnboardingStatus({
+            status: 'pending',
+            completedCount: 0,
+            totalCount: 0,
+            pendingCount: 0,
+            pendingOnboardings: [],
+            steps: [],
+            onboardings: [],
+          })
+          setPendingOnboardings([])
+        } finally {
+          setLoading(false)
+        }
+      } else {
+        setLoading(false)
+      }
+    }
+
+    loadOnboardingData()
+  }, [user])
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       <header className="bg-gradient-to-r from-cyan-200 via-teal-200 to-yellow-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <img src={logo} alt="Limitless Horizons Logo" className="h-10" />
-              <h1 className="text-xl font-bold" style={{ color: '#0F5E7B' }}>
-                LIMITLESS HORIZONS
-              </h1>
             </div>
             <div className="flex items-center gap-4">
               <span style={{ color: '#0F5E7B' }}>
                 Welcome, <span className="font-semibold">{user?.email}</span>
               </span>
-              <button onClick={onLogout} className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
+              <button
+                onClick={onLogout}
+                className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold shadow-md"
+              >
                 Logout
               </button>
             </div>
@@ -186,64 +226,280 @@ function Dashboard({ user, onLogout }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4" style={{ color: '#0F5E7B' }}>
-            Welcome to Limitless Horizons
-          </h2>
-          <p className="text-xl" style={{ color: '#576472' }}>
-            You have successfully logged in.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white border-2 border-teal-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="text-teal-600 text-3xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold mb-2" style={{ color: '#0F5E7B' }}>
-              Dashboard
-            </h3>
-            <p style={{ color: '#576472' }}>View your analytics and insights</p>
+      <div className="flex flex-1">
+        {/* Left Sidebar - Onboarding Tasks */}
+        <aside className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold mb-4" style={{ color: '#0F5E7B' }}>
+              Onboarding Tasks
+            </h2>
+            <div className="border-b border-gray-300 mb-4"></div>
           </div>
 
-          <div className="bg-white border-2 border-yellow-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="text-yellow-600 text-3xl mb-4">⚙️</div>
-            <h3 className="text-xl font-semibold mb-2" style={{ color: '#0F5E7B' }}>
-              Settings
-            </h3>
-            <p style={{ color: '#576472' }}>Manage your account settings</p>
-          </div>
-
-          <div className="bg-white border-2 border-cyan-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="text-cyan-600 text-3xl mb-4">👤</div>
-            <h3 className="text-xl font-semibold mb-2" style={{ color: '#0F5E7B' }}>
-              Profile
-            </h3>
-            <p style={{ color: '#576472' }}>Update your profile information</p>
-          </div>
-        </div>
-
-        <div className="bg-white border-2 border-gray-200 rounded-lg shadow-md p-6">
-          <h3 className="text-2xl font-bold mb-4" style={{ color: '#0F5E7B' }}>
-            Recent Activity
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 bg-teal-50 rounded-lg">
-              <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="font-medium" style={{ color: '#0F5E7B' }}>Login successful</p>
-                <p className="text-sm" style={{ color: '#576472' }}>Just now</p>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-sm" style={{ color: '#576472' }}>
+                Loading steps...
               </div>
             </div>
-            <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-lg">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="font-medium" style={{ color: '#0F5E7B' }}>Account accessed</p>
-                <p className="text-sm" style={{ color: '#576472' }}>Today</p>
+          ) : onboardingStatus && onboardingStatus.steps && onboardingStatus.steps.length > 0 ? (
+            <>
+              <div className="space-y-3">
+                {onboardingStatus.steps.map(step => {
+                  const isCompleted = step.status === 'completed'
+                  const stepStatus = isCompleted ? 'Completed' : 'Pending'
+
+                  return (
+                    <div
+                      key={step.id}
+                      className="bg-white border-2 rounded-lg p-4 shadow-sm"
+                      style={{
+                        borderColor: isCompleted ? '#10b981' : '#f97316',
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                              isCompleted ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
+                            }`}
+                          >
+                            {isCompleted ? '✓' : step.order || step.id}
+                          </div>
+                          <span className="font-medium" style={{ color: '#0F5E7B' }}>
+                            {step.title}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-semibold px-2 py-1 rounded ${
+                            isCompleted
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {stepStatus}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-300">
+                <div className="text-sm" style={{ color: '#576472' }}>
+                  <p className="mb-1">
+                    <span className="font-semibold">Progress:</span>{' '}
+                    {onboardingStatus.completedCount} of {onboardingStatus.totalCount} steps
+                  </p>
+                  {onboardingStatus.totalCount > 0 && (
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          onboardingStatus.status === 'pending' ? 'bg-orange-400' : 'bg-green-400'
+                        }`}
+                        style={{
+                          width: `${(onboardingStatus.completedCount / onboardingStatus.totalCount) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+              <p className="text-sm font-semibold flex items-center gap-2" style={{ color: '#0F5E7B' }}>
+                <span>✓</span>
+                <span>No pending onboarding tasks</span>
+              </p>
             </div>
+          )}
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 p-6">
+          <div className="mb-6">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="text-lg" style={{ color: '#0F5E7B' }}>
+                  Loading...
+                </div>
+              </div>
+            ) : pendingOnboardings.length > 0 ? (
+              <div className="bg-white border-2 border-orange-300 rounded-lg p-6 shadow-md mb-6">
+                <h2 className="font-bold mb-4" style={{ color: '#0F5E7B', fontSize: '1rem' }}>
+                  Onboarding Tasks
+                </h2>
+                <div className="space-y-3">
+                  {pendingOnboardings.map(onboarding => {
+                    const completedSteps =
+                      onboarding.steps?.filter(s => s.status === 'completed').length || 0
+                    const totalSteps = onboarding.steps?.length || 0
+                    const progressPercent = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0
+
+                    return (
+                      <div
+                        key={onboarding.id}
+                        className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-lg" style={{ color: '#0F5E7B' }}>
+                            {onboarding.onboarding_title}
+                          </h3>
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              onboarding.status === 'pending'
+                                ? 'bg-orange-200 text-orange-800'
+                                : 'bg-blue-200 text-blue-800'
+                            }`}
+                          >
+                            {onboarding.status === 'pending' ? 'Pending' : 'In Progress'}
+                          </span>
+                        </div>
+                        {onboarding.steps && onboarding.steps.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm mb-2" style={{ color: '#576472' }}>
+                              Steps: {completedSteps} / {totalSteps} completed
+                            </p>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-orange-400 h-2 rounded-full transition-all"
+                                style={{
+                                  width: `${progressPercent}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setSelectedOnboarding(onboarding)}
+                          className="mt-4 w-full px-4 py-2 bg-[#0F5E7B] text-white rounded-lg font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                          {selectedOnboarding?.id === onboarding.id
+                            ? 'Hide Form'
+                            : 'Start Onboarding'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            {submitStatus.type === 'error' && (
+              <div className="mt-4 p-4 rounded-lg border-2 bg-red-50 border-red-300 text-red-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="font-semibold">{submitStatus.message}</span>
+                  </div>
+                  <button
+                    onClick={() => setSubmitStatus({ type: null, message: '' })}
+                    className="text-current opacity-70 hover:opacity-100"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedOnboarding &&
+              selectedOnboarding.steps &&
+              selectedOnboarding.steps.length > 0 && (
+                <div className="mt-6">
+                  <MultiStepForm
+                    steps={selectedOnboarding.steps}
+                    onSubmit={async values => {
+                      try {
+                        setSubmitStatus({ type: null, message: '' })
+
+                        if (selectedOnboarding?.steps) {
+                          if (onboardingStatus?.steps) {
+                            const updatedStatusSteps = onboardingStatus.steps.map(step => {
+                              if (step.onboardingId === selectedOnboarding.id) {
+                                return { ...step, status: 'completed' }
+                              }
+                              return step
+                            })
+
+                            const completedCount = updatedStatusSteps.filter(
+                              s => s.status === 'completed'
+                            ).length
+                            const totalCount = updatedStatusSteps.length
+
+                            setOnboardingStatus({
+                              ...onboardingStatus,
+                              steps: updatedStatusSteps,
+                              completedCount,
+                              totalCount,
+                              status: completedCount === totalCount ? 'completed' : 'pending',
+                            })
+                          }
+
+                          const updatedSteps = selectedOnboarding.steps.map(step => ({
+                            ...step,
+                            status: 'completed',
+                          }))
+
+                          const updatedOnboarding = {
+                            ...selectedOnboarding,
+                            steps: updatedSteps,
+                            status: 'completed',
+                          }
+
+                          setSelectedOnboarding(updatedOnboarding)
+
+                          const updatedPending = pendingOnboardings.filter(
+                            onb => onb.id !== selectedOnboarding.id
+                          )
+                          setPendingOnboardings(updatedPending)
+                        }
+
+                        await new Promise(resolve => setTimeout(resolve, 300))
+
+                        setLoading(true)
+                        try {
+                          const status = await getOnboardingStatus()
+                          setOnboardingStatus(status)
+                          const pending = await getPendingOnboardings()
+                          setPendingOnboardings(pending)
+                        } catch (refreshError) {
+                          console.error('Error refreshing onboarding status:', refreshError)
+                        } finally {
+                          setLoading(false)
+                        }
+
+                        setTimeout(() => {
+                          setSelectedOnboarding(null)
+                          setSubmitStatus({ type: null, message: '' })
+                        }, 5000)
+                      } catch (error) {
+                        console.error('Submission error:', error)
+                        setSubmitStatus({
+                          type: 'error',
+                          message: error.message || 'Failed to submit form. Please try again.',
+                        })
+                        throw error
+                      }
+                    }}
+                  />
+                </div>
+              )}
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

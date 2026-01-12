@@ -1,5 +1,4 @@
 import apiClient from './apiClient';
-import { getCurrentUser } from './authService';
 
 // Onboarding service for frontend-only tracking
 const ONBOARDING_STORAGE_KEY = 'onboarding_steps';
@@ -13,20 +12,10 @@ const DEFAULT_STEPS = [
 ];
 
 // Fetch onboardings from backend API
+// Uses JWT authentication - no query params needed
 export const fetchUserOnboardings = async () => {
   try {
-    const user = getCurrentUser();
-    if (!user || !user.email || !user.role) {
-      throw new Error('User email and role are required');
-    }
-
-    const response = await apiClient.get('/api/onboarding/user/', {
-      params: {
-        email: user.email,
-        role: user.role,
-      },
-    });
-
+    const response = await apiClient.get('/api/onboarding/user/');
     return response.data || [];
   } catch (error) {
     console.error('Error fetching onboardings:', error);
@@ -87,41 +76,34 @@ export const completeStep = (stepId) => {
   return updateStepStatus(stepId, 'completed');
 };
 
+// Get onboarding step details from backend API
+export const fetchOnboardingStep = async (onboardingId, stepOrder) => {
+  try {
+    const response = await apiClient.get(`/api/onboarding/${onboardingId}/step/${stepOrder}/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching onboarding step:', error);
+    throw error;
+  }
+};
+
 // Get onboarding status from backend API
 export const getOnboardingStatus = async () => {
   try {
     const onboardings = await fetchUserOnboardings();
-    
-    // Flatten all steps from all onboardings
-    const allSteps = [];
-    onboardings.forEach((onboarding) => {
-      onboarding.steps?.forEach((step) => {
-        allSteps.push({
-          id: step.id,
-          onboardingId: onboarding.id,
-          title: step.title,
-          order: step.order,
-          status: step.status,
-          onboardingTitle: onboarding.onboarding_title,
-        });
-      });
-    });
 
-    const completedSteps = allSteps.filter((step) => step.status === 'completed');
-    const pendingSteps = allSteps.filter(
-      (step) => step.status === 'locked' || step.status === 'unlocked'
-    );
+    // Backend returns onboardings with: id, onboarding_title, status, created_at
+    // Steps need to be fetched separately using fetchOnboardingStep
     const pendingOnboardings = onboardings.filter(
       (onboarding) => onboarding.status === 'pending' || onboarding.status === 'inprogress'
     );
 
     return {
       status: pendingOnboardings.length > 0 ? 'pending' : 'completed',
-      completedCount: completedSteps.length,
-      totalCount: allSteps.length,
-      pendingCount: pendingSteps.length,
+      completedCount: onboardings.filter((o) => o.status === 'completed').length,
+      totalCount: onboardings.length,
+      pendingCount: pendingOnboardings.length,
       pendingOnboardings: pendingOnboardings,
-      steps: allSteps,
       onboardings: onboardings,
     };
   } catch (error) {
@@ -133,7 +115,6 @@ export const getOnboardingStatus = async () => {
       totalCount: 0,
       pendingCount: 0,
       pendingOnboardings: [],
-      steps: [],
       onboardings: [],
     };
   }
