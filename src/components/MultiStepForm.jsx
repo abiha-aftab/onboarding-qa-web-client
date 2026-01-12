@@ -457,7 +457,7 @@ function MultiStepForm({
                   disabled={isFirstStep || isSubmitting}
                   className={`px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-200 flex items-center gap-2 ${
                     isFirstStep || isSubmitting
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-200 text-gray-400'
                       : 'bg-gray-100 text-[#0F5E7B] hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98]'
                   }`}
                 >
@@ -474,7 +474,7 @@ function MultiStepForm({
                     disabled={isSubmitting}
                     className={`px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-200 flex items-center gap-2 ${
                       isSubmitting
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-200 text-gray-400'
                         : 'bg-[#0F5E7B] text-white hover:bg-[#0d4d66] hover:scale-[1.02] active:scale-[0.98]'
                     }`}
                   >
@@ -489,7 +489,7 @@ function MultiStepForm({
                     disabled={isSubmitting || currentStepHasErrors}
                     className={`px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-200 flex items-center justify-center gap-2 ${
                       isSubmitting || currentStepHasErrors
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-200 text-gray-400'
                         : 'bg-green-600 text-white hover:bg-green-700 hover:scale-[1.02] active:scale-[0.98]'
                     }`}
                   >

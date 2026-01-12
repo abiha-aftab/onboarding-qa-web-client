@@ -94,14 +94,14 @@ function DynamicField({ question }) {
               checked={field.value || false}
               onChange={handleChange}
               onBlur={field.onBlur}
-              className="w-5 h-5 text-[#0F5E7B] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#FFD350] focus:ring-offset-0 cursor-pointer"
+              className="w-5 h-5 text-[#0F5E7B] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#FFD350] focus:ring-offset-0"
               aria-required={question.is_required}
               aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
               aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
             />
             <label
               htmlFor={fieldName}
-              className="text-base font-medium cursor-pointer"
+              className="text-base font-medium"
               style={{ color: '#0F5E7B' }}
             >
               {question.question_text}
