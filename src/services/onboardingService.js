@@ -87,6 +87,71 @@ export const fetchOnboardingStep = async (onboardingId, stepOrder) => {
   }
 };
 
+// Submit answers for a specific step
+export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQuestions) => {
+  try {
+    const responses = [];
+    
+    // Handle empty step questions (completion step - Step 3)
+    if (!stepQuestions || stepQuestions.length === 0) {
+      const requestData = {
+        onboarding_id: onboardingId,
+        step_id: stepId,
+        responses: [],
+      };
+      console.log('Submitting completion step with empty responses:', requestData);
+      const response = await apiClient.post('/api/onboarding/user/answer', requestData);
+      return response.data;
+    }
+    
+    stepQuestions.forEach((stepQuestion) => {
+      const question = stepQuestion.question;
+      const key = `question_${question.id}`;
+      let answerValue = formValues[key];
+
+      // Handle file uploads: send file name as text for now
+      if (question.answer_type === 'file' && answerValue instanceof File) {
+        answerValue = answerValue.name;
+      }
+
+      const answer = {};
+      switch (question.answer_type) {
+        case 'text':
+          answer.answer_text = answerValue;
+          break;
+        case 'number':
+          answer.answer_number = answerValue === '' ? null : Number(answerValue);
+          break;
+        case 'date':
+          answer.answer_date = answerValue;
+          break;
+        case 'boolean':
+          answer.answer_boolean = Boolean(answerValue);
+          break;
+        case 'file':
+          answer.answer_text = answerValue;
+          break;
+        default:
+          answer.answer_text = answerValue;
+      }
+      responses.push({ question_id: question.id, answer });
+    });
+
+    const requestData = {
+      onboarding_id: onboardingId,
+      step_id: stepId,
+      responses: responses,
+    };
+
+    console.log('Submitting step answer:', requestData);
+    const response = await apiClient.post('/api/onboarding/user/answer', requestData);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting step answer:', error);
+    throw error;
+  }
+};
+
 // Get onboarding status from backend API
 export const getOnboardingStatus = async () => {
   try {

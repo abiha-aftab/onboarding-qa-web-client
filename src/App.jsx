@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import logo from './assets/68d68d4834b714f5ba55664d_Frame 2121450324.svg'
 import { login, logout, getMe, getCurrentUser, isAuthenticated } from './services/authService'
-import { getOnboardingStatus, getPendingOnboardings, fetchUserOnboardings, fetchOnboardingStep } from './services/onboardingService'
+import { getOnboardingStatus, getPendingOnboardings, fetchUserOnboardings, fetchOnboardingStep, submitStepAnswer } from './services/onboardingService'
 import MultiStepForm from './components/MultiStepForm'
 
 function App() {
@@ -170,6 +170,10 @@ function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(true)
   const [selectedOnboarding, setSelectedOnboarding] = useState(null)
   const [submitStatus, setSubmitStatus] = useState({ type: null, message: '' })
+  const [onboardingSteps, setOnboardingSteps] = useState([])
+  const [currentStepOrder, setCurrentStepOrder] = useState(1)
+  const [onboardingComplete, setOnboardingComplete] = useState(false)
+  const [loadingSteps, setLoadingSteps] = useState(false)
 
   useEffect(() => {
     const loadOnboardingData = async () => {
@@ -202,6 +206,177 @@ function Dashboard({ user, onLogout }) {
 
     loadOnboardingData()
   }, [user])
+
+  // Load first step when onboarding is selected
+  useEffect(() => {
+    const loadFirstStep = async () => {
+      if (selectedOnboarding && !onboardingComplete) {
+        setLoadingSteps(true)
+        setOnboardingSteps([])
+        setCurrentStepOrder(1)
+        try {
+          // Fetch Step 1
+          const firstStep = await fetchOnboardingStep(selectedOnboarding.id, 1)
+          setOnboardingSteps([firstStep])
+          setCurrentStepOrder(1)
+        } catch (error) {
+          console.error('Error loading first step:', error)
+          setSubmitStatus({
+            type: 'error',
+            message: error?.data?.detail || error?.message || 'Failed to load onboarding steps. Please try again.',
+          })
+        } finally {
+          setLoadingSteps(false)
+        }
+      } else if (!selectedOnboarding) {
+        // Clear steps when no onboarding is selected
+        setOnboardingSteps([])
+        setCurrentStepOrder(1)
+        setOnboardingComplete(false)
+      }
+    }
+
+    loadFirstStep()
+  }, [selectedOnboarding])
+
+  // Handle step submission
+  const handleStepSubmit = async (onboardingId, stepId, formValues, stepQuestions) => {
+    try {
+      await submitStepAnswer(onboardingId, stepId, formValues, stepQuestions)
+      setSubmitStatus({ type: null, message: '' })
+    } catch (error) {
+      console.error('Error submitting step:', error)
+      const errorMessage = error?.data?.detail || error?.message || 'Failed to submit step. Please try again.'
+      setSubmitStatus({
+        type: 'error',
+        message: errorMessage,
+      })
+      throw error
+    }
+  }
+
+  // Handle step completion and fetch next step
+  const handleStepComplete = async (stepIndex, step, values) => {
+    if (!selectedOnboarding) return
+
+    const nextStepOrder = currentStepOrder + 1
+    console.log(`✅ Step ${currentStepOrder} completed, fetching step ${nextStepOrder}`)
+
+    // Don't fetch if we're already on the last step (Step 3)
+    if (nextStepOrder > 3) {
+      console.log('Already on final step, no more steps to fetch')
+      return
+    }
+
+    // Check if there are more steps to fetch
+    try {
+      console.log(`📥 Fetching step ${nextStepOrder} for onboarding ${selectedOnboarding.id}`)
+      const nextStep = await fetchOnboardingStep(selectedOnboarding.id, nextStepOrder)
+      console.log(`✅ Fetched step ${nextStepOrder}:`, {
+        id: nextStep.id,
+        order: nextStep.order,
+        title: nextStep.title,
+        questionsCount: nextStep.step_questions?.length || 0
+      })
+      
+      // Add the next step to the steps array
+      setOnboardingSteps((prev) => {
+        // Check if step already exists
+        const exists = prev.some(s => s.id === nextStep.id || s.order === nextStep.order)
+        if (exists) {
+          console.log(`Step ${nextStep.order} already exists in array`)
+          return prev
+        }
+        const updated = [...prev, nextStep]
+        console.log(`📝 Updated steps array:`, updated.map(s => ({ order: s.order, title: s.title })))
+        return updated
+      })
+      
+      // Update current step order
+      setCurrentStepOrder(nextStepOrder)
+      console.log(`📍 Current step order updated to: ${nextStepOrder}`)
+      
+      // Check if this is Step 3 (Completion step)
+      if (nextStep && nextStep.order === 3) {
+        console.log('🎉 Step 3 (Completion) loaded - ready for final submit')
+        // Don't mark complete yet - wait for final submit
+      }
+    } catch (error) {
+      // If step doesn't exist (404), we've completed all steps
+      if (error?.status === 404) {
+        console.log('❌ No more steps found (404), onboarding complete')
+        // All steps completed, mark as complete
+        setOnboardingComplete(true)
+        // Refresh onboarding status - this will remove it from pending list
+        const status = await getOnboardingStatus()
+        setOnboardingStatus(status)
+        const pending = await getPendingOnboardings()
+        setPendingOnboardings(pending)
+      } else {
+        console.error('❌ Error fetching next step:', error)
+        setSubmitStatus({
+          type: 'error',
+          message: error?.data?.detail || error?.message || 'Failed to load next step. Please try again.',
+        })
+        throw error // Re-throw so form knows step fetch failed
+      }
+    }
+  }
+
+  // Handle final form submission
+  const handleFinalSubmit = async (values) => {
+    if (!selectedOnboarding) return
+
+    try {
+      setSubmitStatus({ type: null, message: '' })
+
+      // Submit Step 3 (final step) if it has questions
+      const lastStep = onboardingSteps[onboardingSteps.length - 1]
+      if (lastStep && lastStep.step_questions && lastStep.step_questions.length > 0) {
+        const sortedQuestions = [...lastStep.step_questions].sort(
+          (a, b) => (a.order || 0) - (b.order || 0)
+        )
+        await handleStepSubmit(selectedOnboarding.id, lastStep.id, values, sortedQuestions)
+      } else {
+        // Submit empty response for completion step
+        await handleStepSubmit(selectedOnboarding.id, lastStep.id, {}, [])
+      }
+
+      // Mark as complete
+      setOnboardingComplete(true)
+      
+      // Refresh onboarding status - this will remove COMPLETED onboarding from pending list
+      const status = await getOnboardingStatus()
+      setOnboardingStatus(status)
+      const pending = await getPendingOnboardings()
+      // Filter out completed onboardings - backend should already filter, but double-check
+      const activePending = pending.filter(onb => onb.status !== 'completed' && onb.status !== 'COMPLETED')
+      setPendingOnboardings(activePending)
+
+      // Refresh the full onboarding list to update sidebar status
+      const allOnboardings = await fetchUserOnboardings()
+      // Update the pending onboardings list with fresh data
+      const updatedPending = allOnboardings.filter(
+        (onboarding) => onboarding.status === 'pending' || onboarding.status === 'inprogress'
+      )
+      setPendingOnboardings(updatedPending)
+
+      // Clear selection immediately - onboarding is complete and should never show again
+      setSelectedOnboarding(null)
+      setOnboardingSteps([])
+      setCurrentStepOrder(1)
+      setOnboardingComplete(false)
+      
+      console.log('Onboarding completed! It will no longer appear in the list.')
+    } catch (error) {
+      console.error('Error submitting final form:', error)
+      setSubmitStatus({
+        type: 'error',
+        message: error?.data?.detail || error?.message || 'Failed to submit form. Please try again.',
+      })
+      throw error
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -239,71 +414,40 @@ function Dashboard({ user, onLogout }) {
           {loading ? (
             <div className="text-center py-8">
               <div className="text-sm" style={{ color: '#576472' }}>
-                Loading steps...
+                Loading...
               </div>
             </div>
-          ) : onboardingStatus && onboardingStatus.steps && onboardingStatus.steps.length > 0 ? (
+          ) : pendingOnboardings.length > 0 ? (
             <>
               <div className="space-y-3">
-                {onboardingStatus.steps.map(step => {
-                  const isCompleted = step.status === 'completed'
-                  const stepStatus = isCompleted ? 'Completed' : 'Pending'
+                {pendingOnboardings.map(onboarding => {
+                  const isPending = onboarding.status === 'pending' || onboarding.status === 'inprogress'
+                  const statusText = isPending ? 'Pending' : 'In Progress'
 
                   return (
                     <div
-                      key={step.id}
+                      key={onboarding.id}
                       className="bg-white border-2 rounded-lg p-4 shadow-sm"
                       style={{
-                        borderColor: isCompleted ? '#10b981' : '#f97316',
+                        borderColor: '#f97316',
                       }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                              isCompleted ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
-                            }`}
-                          >
-                            {isCompleted ? '✓' : step.order || step.id}
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-orange-500 text-white">
+                            {onboarding.id}
                           </div>
-                          <span className="font-medium" style={{ color: '#0F5E7B' }}>
-                            {step.title}
+                          <span className="font-medium text-sm" style={{ color: '#0F5E7B' }}>
+                            {onboarding.onboarding_title}
                           </span>
                         </div>
-                        <span
-                          className={`text-xs font-semibold px-2 py-1 rounded ${
-                            isCompleted
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-orange-100 text-orange-800'
-                          }`}
-                        >
-                          {stepStatus}
+                        <span className="text-xs font-semibold px-2 py-1 rounded bg-orange-100 text-orange-800">
+                          {statusText}
                         </span>
                       </div>
                     </div>
                   )
                 })}
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-300">
-                <div className="text-sm" style={{ color: '#576472' }}>
-                  <p className="mb-1">
-                    <span className="font-semibold">Progress:</span>{' '}
-                    {onboardingStatus.completedCount} of {onboardingStatus.totalCount} steps
-                  </p>
-                  {onboardingStatus.totalCount > 0 && (
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          onboardingStatus.status === 'pending' ? 'bg-orange-400' : 'bg-green-400'
-                        }`}
-                        style={{
-                          width: `${(onboardingStatus.completedCount / onboardingStatus.totalCount) * 100}%`,
-                        }}
-                      ></div>
-                    </div>
-                  )}
-                </div>
               </div>
             </>
           ) : (
@@ -372,10 +516,32 @@ function Dashboard({ user, onLogout }) {
                           </div>
                         )}
                         <button
-                          onClick={() => setSelectedOnboarding(onboarding)}
-                          className="mt-4 w-full px-4 py-2 bg-[#0F5E7B] text-white rounded-lg font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                          onClick={() => {
+                            // Don't allow opening if onboarding is completed
+                            if (onboarding.status === 'completed' || onboarding.status === 'COMPLETED') {
+                              return;
+                            }
+                            if (selectedOnboarding?.id === onboarding.id) {
+                              // Hide form
+                              setSelectedOnboarding(null)
+                              setOnboardingSteps([])
+                              setCurrentStepOrder(1)
+                              setOnboardingComplete(false)
+                            } else {
+                              // Show form
+                              setSelectedOnboarding(onboarding)
+                            }
+                          }}
+                          disabled={onboarding.status === 'completed' || onboarding.status === 'COMPLETED'}
+                          className={`mt-4 w-full px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+                            onboarding.status === 'completed' || onboarding.status === 'COMPLETED'
+                              ? 'bg-gray-300 text-gray-500'
+                              : 'bg-[#0F5E7B] text-white hover:bg-[#0d4d66]'
+                          }`}
                         >
-                          {selectedOnboarding?.id === onboarding.id
+                          {onboarding.status === 'completed' || onboarding.status === 'COMPLETED'
+                            ? 'Completed'
+                            : selectedOnboarding?.id === onboarding.id
                             ? 'Hide Form'
                             : 'Start Onboarding'}
                         </button>
@@ -415,88 +581,77 @@ function Dashboard({ user, onLogout }) {
               </div>
             )}
 
-            {selectedOnboarding &&
-              selectedOnboarding.steps &&
-              selectedOnboarding.steps.length > 0 && (
-                <div className="mt-6">
-                  <MultiStepForm
-                    steps={selectedOnboarding.steps}
-                    onSubmit={async values => {
-                      try {
-                        setSubmitStatus({ type: null, message: '' })
-
-                        if (selectedOnboarding?.steps) {
-                          if (onboardingStatus?.steps) {
-                            const updatedStatusSteps = onboardingStatus.steps.map(step => {
-                              if (step.onboardingId === selectedOnboarding.id) {
-                                return { ...step, status: 'completed' }
-                              }
-                              return step
-                            })
-
-                            const completedCount = updatedStatusSteps.filter(
-                              s => s.status === 'completed'
-                            ).length
-                            const totalCount = updatedStatusSteps.length
-
-                            setOnboardingStatus({
-                              ...onboardingStatus,
-                              steps: updatedStatusSteps,
-                              completedCount,
-                              totalCount,
-                              status: completedCount === totalCount ? 'completed' : 'pending',
-                            })
-                          }
-
-                          const updatedSteps = selectedOnboarding.steps.map(step => ({
-                            ...step,
-                            status: 'completed',
-                          }))
-
-                          const updatedOnboarding = {
-                            ...selectedOnboarding,
-                            steps: updatedSteps,
-                            status: 'completed',
-                          }
-
-                          setSelectedOnboarding(updatedOnboarding)
-
-                          const updatedPending = pendingOnboardings.filter(
-                            onb => onb.id !== selectedOnboarding.id
-                          )
-                          setPendingOnboardings(updatedPending)
-                        }
-
-                        await new Promise(resolve => setTimeout(resolve, 300))
-
-                        setLoading(true)
-                        try {
-                          const status = await getOnboardingStatus()
-                          setOnboardingStatus(status)
-                          const pending = await getPendingOnboardings()
-                          setPendingOnboardings(pending)
-                        } catch (refreshError) {
-                          console.error('Error refreshing onboarding status:', refreshError)
-                        } finally {
-                          setLoading(false)
-                        }
-
-                        setTimeout(() => {
+            {selectedOnboarding && (
+              <div className="mt-6">
+                {loadingSteps ? (
+                  <div className="bg-white rounded-xl shadow-lg p-8 text-center border-2 border-gray-100">
+                    <svg className="animate-spin h-10 w-10 mx-auto mb-3" style={{ color: '#0F5E7B' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-lg font-semibold" style={{ color: '#0F5E7B' }}>Loading onboarding steps...</p>
+                  </div>
+                ) : onboardingComplete ? (
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-gray-100">
+                    <div className="bg-gradient-to-r from-green-50 to-cyan-50 px-6 py-8 text-center">
+                      <div className="mb-4">
+                        <div className="w-20 h-20 mx-auto bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <h2 className="text-3xl font-bold mb-2" style={{ color: '#0F5E7B' }}>
+                        Onboarding Completed Successfully!
+                      </h2>
+                      <p className="text-lg mb-6" style={{ color: '#576472' }}>
+                        Thank you for completing the onboarding process. Your information has been submitted and will be reviewed.
+                      </p>
+                      <button
+                        onClick={() => {
                           setSelectedOnboarding(null)
-                          setSubmitStatus({ type: null, message: '' })
-                        }, 5000)
-                      } catch (error) {
-                        console.error('Submission error:', error)
-                        setSubmitStatus({
-                          type: 'error',
-                          message: error.message || 'Failed to submit form. Please try again.',
-                        })
-                        throw error
-                      }
-                    }}
+                          setOnboardingSteps([])
+                          setCurrentStepOrder(1)
+                          setOnboardingComplete(false)
+                        }}
+                        className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                ) : onboardingSteps.length > 0 ? (
+                  <MultiStepForm
+                    steps={onboardingSteps}
+                    onboardingId={selectedOnboarding.id}
+                    onSubmitStep={handleStepSubmit}
+                    onStepComplete={handleStepComplete}
+                    onSubmit={handleFinalSubmit}
+                    totalSteps={3}
+                    currentStepOrder={currentStepOrder}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-8 text-center border-2 border-gray-100">
+                    <p className="text-lg font-semibold mb-2" style={{ color: '#0F5E7B' }}>
+                      No steps available
+                    </p>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Unable to load onboarding steps. Please try again.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSelectedOnboarding(null)
+                        setOnboardingSteps([])
+                        setCurrentStepOrder(1)
+                      }}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>
