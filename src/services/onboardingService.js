@@ -23,16 +23,31 @@ export const fetchUserOnboardings = async () => {
   }
 };
 
-// Get pending onboardings
+// Get pending onboardings (includes pending, in_progress, and pending_review)
 export const getPendingOnboardings = async () => {
   try {
     const onboardings = await fetchUserOnboardings();
     return onboardings.filter(
-      (onboarding) => onboarding.status === 'pending' || onboarding.status === 'inprogress'
+      (onboarding) => 
+        onboarding.status === 'pending' || 
+        onboarding.status === 'inprogress' || 
+        onboarding.status === 'in_progress' ||
+        onboarding.status === 'pending_review'
     );
   } catch (error) {
     console.error('Error getting pending onboardings:', error);
     return [];
+  }
+};
+
+// Start onboarding (update status from pending to in_progress)
+export const startOnboarding = async (onboardingId) => {
+  try {
+    const response = await apiClient.post(`/api/onboarding/${onboardingId}/start/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error starting onboarding:', error);
+    throw error;
   }
 };
 
@@ -99,7 +114,6 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
         step_id: stepId,
         responses: [],
       };
-      console.log('Submitting completion step with empty responses:', requestData);
       const response = await apiClient.post('/api/onboarding/user/answer', requestData);
       return response.data;
     }
@@ -143,7 +157,6 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
       responses: responses,
     };
 
-    console.log('Submitting step answer:', requestData);
     const response = await apiClient.post('/api/onboarding/user/answer', requestData);
     return response.data;
   } catch (error) {
@@ -157,10 +170,14 @@ export const getOnboardingStatus = async () => {
   try {
     const onboardings = await fetchUserOnboardings();
 
-    // Backend returns onboardings with: id, onboarding_title, status, created_at
+    // Backend returns onboardings with: id, onboarding_title, status, completed_steps, total_steps, created_at
     // Steps need to be fetched separately using fetchOnboardingStep
     const pendingOnboardings = onboardings.filter(
-      (onboarding) => onboarding.status === 'pending' || onboarding.status === 'inprogress'
+      (onboarding) => 
+        onboarding.status === 'pending' || 
+        onboarding.status === 'inprogress' || 
+        onboarding.status === 'in_progress' ||
+        onboarding.status === 'pending_review'
     );
 
     return {
