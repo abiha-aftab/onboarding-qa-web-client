@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import logo from './assets/68d68d4834b714f5ba55664d_Frame 2121450324.svg'
 import { login, logout, getMe, getCurrentUser, isAuthenticated } from './services/authService'
-import { getOnboardingStatus, getPendingOnboardings, fetchUserOnboardings, fetchOnboardingStep, submitStepAnswer, startOnboarding } from './services/onboardingService'
+import { getOnboardingStatus, getPendingOnboardings, fetchUserOnboardings, fetchOnboardingStep, submitStepAnswer } from './services/onboardingService'
 import MultiStepForm from './components/MultiStepForm'
 
 function App() {
@@ -174,6 +174,8 @@ function Dashboard({ user, onLogout }) {
   const [currentStepOrder, setCurrentStepOrder] = useState(1)
   const [onboardingComplete, setOnboardingComplete] = useState(false)
   const [loadingSteps, setLoadingSteps] = useState(false)
+  const isLoadingRef = useRef(false) // Prevent infinite loop
+  const [formData, setFormData] = useState({}) // Store all form values across steps
 
   useEffect(() => {
     const loadOnboardingData = async () => {
@@ -210,13 +212,23 @@ function Dashboard({ user, onLogout }) {
   // Load steps when onboarding is selected
   useEffect(() => {
     const loadSteps = async () => {
-      if (selectedOnboarding && !onboardingComplete) {
-        setLoadingSteps(true)
-        setOnboardingSteps([])
-        
-        try {
-          // Determine which step to load based on status and completed_steps
-          let stepToLoad = 1;
+      if (!selectedOnboarding || onboardingComplete) {
+        isLoadingRef.current = false
+        return
+      }
+      
+      // Prevent infinite loop - don't load if already loading the same onboarding
+      if (isLoadingRef.current) {
+        return
+      }
+      
+      isLoadingRef.current = true
+      setLoadingSteps(true)
+      setOnboardingSteps([])
+      
+      try {
+        // Determine which step to load based on status and completed_steps
+        let stepToLoad = 1;
           
           if (selectedOnboarding.status === 'in_progress' || selectedOnboarding.status === 'inprogress') {
             // Resume at the next step after completed_steps
@@ -240,7 +252,17 @@ function Dashboard({ user, onLogout }) {
             steps.push(currentStep);
             setOnboardingSteps(steps);
             setCurrentStepOrder(stepToLoad);
+            
+            // Refresh onboarding status to update sidebar with latest data
+            const status = await getOnboardingStatus();
+            setOnboardingStatus(status);
+            const pending = await getPendingOnboardings();
+            setPendingOnboardings(pending);
+            // Don't update selectedOnboarding here to avoid triggering useEffect loop
+            // The sidebar will update from the status refresh above
+            
             setLoadingSteps(false);
+            isLoadingRef.current = false;
             return;
           } else if (selectedOnboarding.status === 'pending_review') {
             // If pending review, show all steps but disable form
@@ -258,6 +280,7 @@ function Dashboard({ user, onLogout }) {
             setOnboardingSteps(steps);
             setCurrentStepOrder(completedSteps);
             setLoadingSteps(false);
+            isLoadingRef.current = false;
             return;
           } else {
             // For pending status, start at step 1
@@ -268,31 +291,55 @@ function Dashboard({ user, onLogout }) {
           const step = await fetchOnboardingStep(selectedOnboarding.id, stepToLoad);
           setOnboardingSteps([step]);
           setCurrentStepOrder(stepToLoad);
+          
+          // Backend automatically updates status from 'pending' to 'in_progress' when fetching first step
+          // Refresh onboarding status to update sidebar with latest status and completed_steps
+          const status = await getOnboardingStatus();
+          setOnboardingStatus(status);
+          const pending = await getPendingOnboardings();
+          setPendingOnboardings(pending);
+          // Don't update selectedOnboarding here to avoid triggering useEffect loop
+          // The sidebar will update from the status refresh above
         } catch (error) {
           console.error('Error loading step:', error)
+          let errorMessage = 'Failed to load onboarding steps. Please try again.';
+          
+          if (error?.status === 404) {
+            if (error?.data?.detail) {
+              errorMessage = error.data.detail;
+            } else {
+              errorMessage = `Step not found. Please ensure onboarding steps are configured for this user type.`;
+            }
+          } else if (error?.data?.detail) {
+            errorMessage = error.data.detail;
+          } else if (error?.message) {
+            errorMessage = error.message;
+          }
+          
           setSubmitStatus({
             type: 'error',
-            message: error?.data?.detail || error?.message || 'Failed to load onboarding steps. Please try again.',
+            message: errorMessage,
           })
+          // Clear steps on error so user can try again
+          setOnboardingSteps([])
         } finally {
+          // Stop loading and prevent retry loop
           setLoadingSteps(false)
+          isLoadingRef.current = false
         }
-      } else if (!selectedOnboarding) {
-        // Clear steps when no onboarding is selected
-        setOnboardingSteps([])
-        setCurrentStepOrder(1)
-        setOnboardingComplete(false)
-      }
     }
 
     loadSteps()
-  }, [selectedOnboarding])
+  }, [selectedOnboarding, onboardingComplete])
 
   // Handle step submission
   const handleStepSubmit = async (onboardingId, stepId, formValues, stepQuestions) => {
     try {
-      const response = await submitStepAnswer(onboardingId, stepId, formValues, stepQuestions)
+      await submitStepAnswer(onboardingId, stepId, formValues, stepQuestions)
       setSubmitStatus({ type: null, message: '' })
+      
+      // Wait a moment for backend to process status update
+      await new Promise(resolve => setTimeout(resolve, 300))
       
       // Refresh onboarding status to update sidebar
       const status = await getOnboardingStatus()
@@ -300,12 +347,40 @@ function Dashboard({ user, onLogout }) {
       const pending = await getPendingOnboardings()
       setPendingOnboardings(pending)
       
-      // Update selected onboarding if it exists
+      // Update selected onboarding if it exists - refresh multiple times to get latest status
       if (selectedOnboarding && selectedOnboarding.id === onboardingId) {
-        const allOnboardings = await fetchUserOnboardings()
-        const updatedOnboarding = allOnboardings.find(o => o.id === onboardingId)
+        let retries = 2
+        let updatedOnboarding = null
+        
+        while (retries > 0) {
+          const allOnboardings = await fetchUserOnboardings()
+          updatedOnboarding = allOnboardings.find(o => o.id === onboardingId)
+          
+          if (updatedOnboarding) {
+            // If status is pending_review or we've tried enough, break
+            if (updatedOnboarding.status === 'pending_review' || retries === 1) {
+              break
+            }
+          }
+          
+          if (retries > 1) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+          retries--
+        }
+        
         if (updatedOnboarding) {
           setSelectedOnboarding(updatedOnboarding)
+          // Also update pending onboardings list
+          const allOnboardings = await fetchUserOnboardings()
+          const updatedPending = allOnboardings.filter(
+            (onboarding) => 
+              onboarding.status === 'pending' || 
+              onboarding.status === 'inprogress' || 
+              onboarding.status === 'in_progress' ||
+              onboarding.status === 'pending_review'
+          )
+          setPendingOnboardings(updatedPending)
         }
       }
       
@@ -369,29 +444,48 @@ function Dashboard({ user, onLogout }) {
     }
   }
 
+  // Handle form data changes from MultiStepForm
+  const handleFormDataChange = useCallback((newFormData) => {
+    setFormData(prevData => ({ ...prevData, ...newFormData }))
+  }, [])
+
   // Handle final form submission
+  // Note: Step 3 is already submitted in MultiStepForm.handleSubmit, so we just handle completion here
   const handleFinalSubmit = async (values) => {
     if (!selectedOnboarding) return
 
     try {
       setSubmitStatus({ type: null, message: '' })
 
-      // Submit Step 3 (final step) if it has questions
-      const lastStep = onboardingSteps[onboardingSteps.length - 1]
-      if (lastStep && lastStep.step_questions && lastStep.step_questions.length > 0) {
-        const sortedQuestions = [...lastStep.step_questions].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
-        )
-        await handleStepSubmit(selectedOnboarding.id, lastStep.id, values, sortedQuestions)
-      } else {
-        // Submit empty response for completion step
-        await handleStepSubmit(selectedOnboarding.id, lastStep.id, {}, [])
-      }
+      // Step 3 is already submitted by MultiStepForm.handleSubmit before calling this
+      // Wait a moment for backend to process the status update
+      await new Promise(resolve => setTimeout(resolve, 300))
 
       // Mark as complete (pending review)
       setOnboardingComplete(true)
       
       // Refresh onboarding status to get updated status (should be pending_review now)
+      // Refresh multiple times to ensure we get the latest status
+      let retries = 3
+      let updatedOnboarding = null
+      
+      while (retries > 0 && !updatedOnboarding) {
+        const allOnboardings = await fetchUserOnboardings()
+        updatedOnboarding = allOnboardings.find(o => o.id === selectedOnboarding.id)
+        
+        // Check if status has been updated to pending_review
+        if (updatedOnboarding && updatedOnboarding.status === 'pending_review') {
+          break
+        }
+        
+        // If not updated yet, wait and retry
+        if (retries > 1) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        retries--
+      }
+      
+      // Update the status and pending onboardings list
       const status = await getOnboardingStatus()
       setOnboardingStatus(status)
       const pending = await getPendingOnboardings()
@@ -410,9 +504,15 @@ function Dashboard({ user, onLogout }) {
       setPendingOnboardings(updatedPending)
 
       // Update selected onboarding with new status
-      const updatedOnboarding = allOnboardings.find(o => o.id === selectedOnboarding.id)
       if (updatedOnboarding) {
         setSelectedOnboarding(updatedOnboarding)
+      } else {
+        // Fallback: refresh one more time
+        const finalRefresh = await fetchUserOnboardings()
+        const finalOnboarding = finalRefresh.find(o => o.id === selectedOnboarding.id)
+        if (finalOnboarding) {
+          setSelectedOnboarding(finalOnboarding)
+        }
       }
     } catch (error) {
       console.error('Error submitting final form:', error)
@@ -651,32 +751,15 @@ function Dashboard({ user, onLogout }) {
                               setOnboardingSteps([])
                               setCurrentStepOrder(1)
                               setOnboardingComplete(false)
+                              setFormData({}) // Clear form data when hiding
+                              isLoadingRef.current = false // Reset loading ref
                             } else {
-                              // If status is pending, start onboarding first
-                              if (onboarding.status === 'pending') {
-                                try {
-                                  setLoading(true);
-                                  const updatedOnboarding = await startOnboarding(onboarding.id);
-                                  // Refresh onboarding list
-                                  const status = await getOnboardingStatus();
-                                  setOnboardingStatus(status);
-                                  const pending = await getPendingOnboardings();
-                                  setPendingOnboardings(pending);
-                                  // Set the updated onboarding as selected
-                                  setSelectedOnboarding(updatedOnboarding);
-                                } catch (error) {
-                                  console.error('Error starting onboarding:', error);
-                                  setSubmitStatus({
-                                    type: 'error',
-                                    message: error?.data?.detail || error?.message || 'Failed to start onboarding. Please try again.',
-                                  });
-                                } finally {
-                                  setLoading(false);
-                                }
-                              } else {
-                                // Show form (status is in_progress)
-                                setSelectedOnboarding(onboarding);
-                              }
+                              // Reset loading ref before selecting new onboarding
+                              isLoadingRef.current = false
+                              setFormData({}) // Clear form data when selecting new onboarding
+                              // Set onboarding as selected - this will trigger step loading
+                              // Backend automatically updates status from pending to in_progress when fetching first step
+                              setSelectedOnboarding(onboarding);
                             }
                           }}
                           disabled={
@@ -765,6 +848,7 @@ function Dashboard({ user, onLogout }) {
                           setOnboardingSteps([])
                           setCurrentStepOrder(1)
                           setOnboardingComplete(false)
+                          setFormData({}) // Clear form data
                         }}
                         className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                       >
@@ -802,6 +886,7 @@ function Dashboard({ user, onLogout }) {
                           setOnboardingSteps([])
                           setCurrentStepOrder(1)
                           setOnboardingComplete(false)
+                          setFormData({}) // Clear form data
                         }}
                         className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                       >
@@ -818,6 +903,8 @@ function Dashboard({ user, onLogout }) {
                     onSubmit={handleFinalSubmit}
                     totalSteps={3}
                     currentStepOrder={currentStepOrder}
+                    initialValues={formData}
+                    onFormDataChange={handleFormDataChange}
                   />
                 ) : (
                   <div className="bg-white rounded-xl shadow-lg p-8 text-center border-2 border-gray-100">

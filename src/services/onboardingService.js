@@ -40,16 +40,9 @@ export const getPendingOnboardings = async () => {
   }
 };
 
-// Start onboarding (update status from pending to in_progress)
-export const startOnboarding = async (onboardingId) => {
-  try {
-    const response = await apiClient.post(`/api/onboarding/${onboardingId}/start/`);
-    return response.data;
-  } catch (error) {
-    console.error('Error starting onboarding:', error);
-    throw error;
-  }
-};
+// Note: Starting onboarding is handled automatically by the backend
+// when fetching the first step via fetchOnboardingStep()
+// The backend updates status from 'pending' to 'in_progress' automatically
 
 // Get onboarding steps from localStorage
 export const getOnboardingSteps = () => {
@@ -123,9 +116,14 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
       const key = `question_${question.id}`;
       let answerValue = formValues[key];
 
-      // Handle file uploads: send file name as text for now
-      if (question.answer_type === 'file' && answerValue instanceof File) {
-        answerValue = answerValue.name;
+      // Handle file uploads: send file name as text
+      if (question.answer_type === 'file') {
+        if (answerValue instanceof File) {
+          answerValue = answerValue.name;
+        } else if (!answerValue || answerValue === '') {
+          // If no file selected and it's required, keep as empty string for validation
+          answerValue = '';
+        }
       }
 
       const answer = {};

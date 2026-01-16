@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import DynamicField from './DynamicField';
@@ -13,6 +13,7 @@ function MultiStepForm({
   onboardingId,
   totalSteps = 3,
   currentStepOrder: propCurrentStepOrder,
+  onFormDataChange,
 }) {
   const normalizedSteps = useMemo(() => {
     if (!steps) return [];
@@ -41,12 +42,19 @@ function MultiStepForm({
   
   const hasQuestions = sortedStepQuestions.length > 0;
 
-  // Sync currentStepOrder with props if provided
+  // Sync currentStepOrder with props if provided (only when prop changes, not when state changes)
+  const prevPropStepOrderRef = useRef(propCurrentStepOrder);
   useEffect(() => {
-    if (propCurrentStepOrder !== undefined && propCurrentStepOrder !== currentStepOrder) {
-      setCurrentStepOrder(propCurrentStepOrder);
+    // Only sync if the prop actually changed (not when currentStepOrder changes)
+    if (propCurrentStepOrder !== undefined && propCurrentStepOrder !== prevPropStepOrderRef.current) {
+      const stepExists = normalizedSteps.some(s => s.order === propCurrentStepOrder);
+      if (stepExists) {
+        setCurrentStepOrder(propCurrentStepOrder);
+      }
+      prevPropStepOrderRef.current = propCurrentStepOrder;
     }
-  }, [propCurrentStepOrder]);
+  }, [propCurrentStepOrder, normalizedSteps]);
+  
 
   // Sync when steps are loaded
   useEffect(() => {
@@ -64,11 +72,10 @@ function MultiStepForm({
   }, [normalizedSteps, currentStepOrder]);
 
   const initialValues = useMemo(() => {
-    if (providedInitialValues) {
-      return providedInitialValues;
-    }
+    // Start with provided initial values from parent (formData) or empty object
+    const baseValues = providedInitialValues || {};
 
-    const values = {};
+    // Ensure all questions have default values for ALL steps (so data persists across navigation)
     normalizedSteps.forEach((step) => {
       const sortedQuestions = [...(step.step_questions || [])].sort(
         (a, b) => (a.order || 0) - (b.order || 0)
@@ -78,24 +85,27 @@ function MultiStepForm({
         const question = stepQuestion.question;
         const key = `question_${question.id}`;
 
-        switch (question.answer_type) {
-          case 'boolean':
-            values[key] = false;
-            break;
-          case 'number':
-            values[key] = '';
-            break;
-          case 'file':
-            values[key] = null;
-            break;
-          default:
-            values[key] = '';
+        // Only set default if value doesn't exist
+        if (!(key in baseValues)) {
+          switch (question.answer_type) {
+            case 'boolean':
+              baseValues[key] = false;
+              break;
+            case 'number':
+              baseValues[key] = '';
+              break;
+            case 'file':
+              baseValues[key] = null;
+              break;
+            default:
+              baseValues[key] = '';
+          }
         }
       });
     });
 
-    return values;
-  }, [normalizedSteps, providedInitialValues]);
+    return baseValues;
+  }, [normalizedSteps, providedInitialValues]); // Remove currentStepOrder dependency - parent manages state
 
   const currentStepValidationSchema = useMemo(() => {
     if (!currentStep) return Yup.object({});
@@ -173,6 +183,11 @@ function MultiStepForm({
         });
         setErrors(updatedErrors);
 
+        // Save current form values to parent state before moving forward
+        if (onFormDataChange) {
+          onFormDataChange(values);
+        }
+        
         // Submit current step to backend BEFORE moving forward
         setSubmitting(true);
         try {
@@ -256,55 +271,120 @@ function MultiStepForm({
     ]
   );
 
-  const handleBack = useCallback(() => {
-    const prevOrder = Math.max(currentStepOrder - 1, 1);
+  const handleBack = useCallback((currentFormValues) => {
+    // Don't go back if already on first step
+    if (currentStepOrder <= 1) {
+      return;
+    }
+    
+    // Save current form values to parent state before going back
+    if (currentFormValues && onFormDataChange) {
+      onFormDataChange(currentFormValues);
+    }
+    
+    const prevOrder = currentStepOrder - 1;
+    
+    // Find the previous step
+    const prevStep = normalizedSteps.find(s => s.order === prevOrder);
+    
+    // Update step order - Formik will reinitialize with saved values from parent state
     setCurrentStepOrder(prevOrder);
     
-    const prevStep = normalizedSteps.find(s => s.order === prevOrder);
+    // Notify about step change
     if (prevStep && onStepChange) {
       const prevIndex = normalizedSteps.indexOf(prevStep);
       onStepChange(prevIndex, prevStep);
     }
-  }, [currentStepOrder, normalizedSteps, onStepChange]);
+  }, [currentStepOrder, normalizedSteps, onStepChange, onFormDataChange]);
 
   const handleSubmit = useCallback(
-    async (values, { setSubmitting }) => {
+    async (values, { setSubmitting, setErrors }) => {
       try {
         setSubmitting(true);
         
+        // Save current form values to parent state before final submission
+        if (onFormDataChange) {
+          onFormDataChange(values);
+        }
+        
         // Submit Step 3 (final step) to backend
+        // Always submit Step 3 to mark onboarding as complete, even if it has no questions
         if (onSubmitStep && onboardingId && currentStep?.id) {
-          // Step 3 might have no questions (completion step)
           if (hasQuestions && sortedStepQuestions.length > 0) {
+            // Verify we have values for all questions
+            const missingQuestions = sortedStepQuestions.filter((stepQuestion) => {
+              const question = stepQuestion.question;
+              const key = `question_${question.id}`;
+              const value = values[key];
+              // Check if required question is missing
+              const isRequired = question.is_required || stepQuestion.is_required;
+              if (isRequired) {
+                if (question.answer_type === 'boolean') {
+                  return value !== true;
+                } else if (question.answer_type === 'file') {
+                  return !value || value === null;
+                } else {
+                  return !value || value === '' || value === null;
+                }
+              }
+              return false;
+            });
+            
+            if (missingQuestions.length > 0) {
+              const errors = {};
+              missingQuestions.forEach((stepQuestion) => {
+                const question = stepQuestion.question;
+                errors[`question_${question.id}`] = 'This field is required';
+              });
+              setErrors(errors);
+              setSubmitting(false);
+              return;
+            }
+            
+            // Submit Step 3 with questions
             await onSubmitStep(onboardingId, currentStep.id, values, sortedStepQuestions);
           } else {
-            // Submit empty response for completion step
+            // Step 3 has no questions - submit with empty responses to mark as complete
             await onSubmitStep(onboardingId, currentStep.id, {}, []);
           }
         }
 
         setCompletedSteps((prev) => new Set([...prev, currentStepOrder]));
 
+        // Save form data before calling onSubmit
+        const formData = { ...values };
+        
+        // Call onSubmit which will refresh the sidebar status
+        // Add a small delay to ensure backend has processed the status update
+        if (onSubmit) {
+          // Wait a bit for backend to update status
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await Promise.resolve(onSubmit(formData));
+        }
+        
+        // Also call onStepComplete if provided (for consistency)
         if (onStepComplete) {
           onStepComplete(currentStepIndex, currentStep, values);
-        }
-
-        const formData = { ...values };
-
-        if (onSubmit) {
-          await Promise.resolve(onSubmit(formData));
         }
 
         setIsSubmitted(true);
         setSubmittedValues(formData);
       } catch (error) {
         console.error('Error submitting final form:', error);
+        // Set form-level error if submission fails
+        if (error?.data?.detail) {
+          setErrors({ _submit: error.data.detail });
+        } else if (error?.message) {
+          setErrors({ _submit: error.message });
+        } else {
+          setErrors({ _submit: 'Failed to submit form. Please try again.' });
+        }
         throw error;
       } finally {
         setSubmitting(false);
       }
     },
-    [currentStepOrder, currentStep, onSubmit, onStepComplete, onSubmitStep, onboardingId, hasQuestions, sortedStepQuestions]
+    [currentStepOrder, currentStep, onSubmit, onStepComplete, onSubmitStep, onboardingId, hasQuestions, sortedStepQuestions, onFormDataChange]
   );
 
   const formatValueForDisplay = useCallback((value, answerType) => {
@@ -399,12 +479,16 @@ function MultiStepForm({
 
   return (
     <Formik
+      key={`onboarding-${onboardingId}-step-${currentStepOrder}`} // Stable key per onboarding/step combination
       initialValues={initialValues}
       validationSchema={currentStepValidationSchema}
       onSubmit={handleSubmit}
       enableReinitialize={true}
     >
-      {({ validateForm, setTouched, setErrors, isSubmitting, values, errors, touched, setSubmitting }) => {
+      {({ validateForm, setTouched, setErrors, isSubmitting, values, errors, touched, setSubmitting, setValues }) => {
+        // Note: Form values are saved to parent state only when navigating (Next/Back)
+        // This prevents Formik reinitialization while user is typing
+        // Values are preserved in Formik's internal state during typing
         const currentStepHasErrors = hasQuestions && sortedStepQuestions.some((stepQuestion) => {
           const question = stepQuestion.question;
           const key = `question_${question.id}`;
@@ -527,6 +611,17 @@ function MultiStepForm({
                 </p>
               </div>
 
+              {errors._submit && (
+                <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-red-800 font-semibold">{errors._submit}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6 mb-6">
                 {sortedStepQuestions.map((stepQuestion) => {
                   const question = stepQuestion.question;
@@ -543,7 +638,7 @@ function MultiStepForm({
                 {!isFirstStep && (
                   <button
                     type="button"
-                    onClick={handleBack}
+                    onClick={() => handleBack(values)}
                     disabled={isSubmitting}
                     className={`px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-200 flex items-center gap-2 ${
                       isSubmitting
