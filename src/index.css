@@ -65,6 +65,14 @@ button {
 button:hover {
   border-color: #646cff;
 }
+/* Override for menu buttons - prevent dark background */
+.menu-item-button {
+  background-color: #ffffff !important;
+  border: none !important;
+}
+.menu-item-button:hover {
+  border-color: transparent !important;
+}
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -81,4 +89,20 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Toast animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slideInUp 0.3s ease-out;
 }
