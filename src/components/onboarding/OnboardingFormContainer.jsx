@@ -4,7 +4,6 @@ import {
   fetchOnboardingSteps,
   submitStep,
   updateFormData,
-  setCurrentStepOrder,
   setOnboardingComplete,
   fetchOnboardings,
 } from '../../store/slices/onboardingSlice'
@@ -93,7 +92,7 @@ function OnboardingFormContainer() {
     }
 
     loadSteps()
-  }, [selectedOnboarding?.id, dispatch, onboardingComplete])
+  }, [selectedOnboarding?.id, selectedOnboarding, dispatch, onboardingComplete])
 
   // Handle step submission
   const handleStepSubmit = useCallback(
@@ -124,7 +123,8 @@ function OnboardingFormContainer() {
 
   // Handle step completion - all steps are already loaded, just refresh onboardings
   const handleStepComplete = useCallback(
-    async (stepIndex, step, values) => {
+    // eslint-disable-next-line no-unused-vars
+    async (_stepIndex, _step, _values) => {
       if (!selectedOnboarding) return
 
       const nextStepOrder = currentStepOrder + 1
@@ -152,7 +152,8 @@ function OnboardingFormContainer() {
 
   // Handle final form submission
   const handleFinalSubmit = useCallback(
-    async (values) => {
+    // eslint-disable-next-line no-unused-vars
+    async (_values) => {
       if (!selectedOnboarding) return
 
       try {

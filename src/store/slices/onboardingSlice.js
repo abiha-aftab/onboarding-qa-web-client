@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import {
-  fetchUserOnboardings,
   getPendingOnboardings,
   fetchOnboardingStep,
   fetchAllOnboardingSteps,

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { logoutUser } from '../../store/slices/authSlice'
 import { showToast } from '../../store/slices/uiSlice'
 import logo from '../../assets/68d68d4834b714f5ba55664d_Frame 2121450324.svg'
@@ -8,7 +8,6 @@ import logo from '../../assets/68d68d4834b714f5ba55664d_Frame 2121450324.svg'
 function Header() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const location = useLocation()
   const { user, loading } = useSelector((state) => state.auth)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -22,9 +21,6 @@ function Header() {
       dispatch(showToast({ type: 'warning', message: 'Logged out locally' }))
     }
   }
-
-  const isOnboardingsPage = location.pathname === '/onboardings' || location.pathname.startsWith('/onboarding/')
-  const isHomePage = location.pathname === '/' || location.pathname === ''
 
   const handleMenuToggle = () => {
     setMenuOpen(!menuOpen)

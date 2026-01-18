@@ -20,11 +20,11 @@ export const loginUser = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   'auth/logout',
-  async (_, { rejectWithValue }) => {
+  async () => {
     try {
       await logoutService()
       return null
-    } catch (error) {
+    } catch {
       // Even if logout fails, clear local state
       return null
     }

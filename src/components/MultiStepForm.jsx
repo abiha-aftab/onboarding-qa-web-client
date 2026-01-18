@@ -324,10 +324,10 @@ function MultiStepForm({
       onStepComplete,
       onSubmitStep,
       onboardingId,
-      hasQuestions,
       sortedStepQuestions,
       totalSteps,
       currentStepIndex,
+      onFormDataChange,
     ]
   );
 
@@ -446,7 +446,7 @@ function MultiStepForm({
         setSubmitting(false);
       }
     },
-    [currentStepOrder, currentStep, onSubmit, onStepComplete, onSubmitStep, onboardingId, hasQuestions, sortedStepQuestions, onFormDataChange]
+    [currentStepOrder, currentStep, onSubmit, onStepComplete, onSubmitStep, onboardingId, hasQuestions, sortedStepQuestions, onFormDataChange, currentStepIndex]
   );
 
   const formatValueForDisplay = useCallback((value, answerType) => {
@@ -492,7 +492,7 @@ function MultiStepForm({
       onSubmit={handleSubmit}
       enableReinitialize={true}
     >
-      {({ validateForm, setTouched, setErrors, isSubmitting, values, errors, touched, setSubmitting, setValues }) => {
+      {({ validateForm, setTouched, setErrors, isSubmitting, values, errors, touched, setSubmitting }) => {
         // Note: Form values are saved to parent state only when navigating (Next/Back)
         // This prevents Formik reinitialization while user is typing
         // Values are preserved in Formik's internal state during typing

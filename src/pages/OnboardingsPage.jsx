@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { fetchOnboardings, selectOnboarding } from '../store/slices/onboardingSlice'
+import { fetchOnboardings } from '../store/slices/onboardingSlice'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import StatusBadge from '../components/ui/StatusBadge'
 import LoadingSpinner from '../components/ui/LoadingSpinner'

@@ -62,13 +62,11 @@ apiClient.interceptors.response.use(
   error => {
     const store = getStoreRef()
     let errorMessage = 'An error occurred'
-    let errorStatus = 0
 
     // Handle axios errors
     if (error.response) {
       // Server responded with error status (4xx, 5xx)
       const { status, data } = error.response
-      errorStatus = status
 
       // Log error response for debugging
       console.error(

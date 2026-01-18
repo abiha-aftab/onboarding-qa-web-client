@@ -8,15 +8,18 @@ import FileInput from './form/fields/FileInput'
 function DynamicField({ question, readOnly = false }) {
   // Ensure fieldName is always unique - use question.id if available, otherwise throw error
   // This prevents field name collisions
+  // Call hook before any early returns to satisfy Rules of Hooks
+  // Use a static fallback for invalid questions to avoid impure Math.random()
+  const fieldName = question?.id ? `question_${question.id}` : 'question_invalid'
+  const [field, meta, helpers] = useField(fieldName)
+  
   if (!question || !question.id) {
     console.error('DynamicField: question or question.id is missing', question)
     return null
   }
-  const fieldName = `question_${question.id}`
-  const [field, meta, helpers] = useField(fieldName)
 
   const handleChange = (e) => {
-    const { value, checked, files, type } = e.target
+    const { value, checked, files } = e.target
 
     switch (question.answer_type) {
       case 'number':

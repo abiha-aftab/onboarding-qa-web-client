@@ -72,7 +72,7 @@ function OnboardingDetailPage() {
         // This may fail if it's not in pending list, but that's okay
         try {
           await dispatch(selectOnboarding(onboardingId)).unwrap()
-        } catch (selectError) {
+        } catch {
           // Selection might fail for completed/review onboardings - that's fine
           // We'll still proceed with loading steps
           console.log('Onboarding not in pending list, continuing anyway')
@@ -112,7 +112,7 @@ function OnboardingDetailPage() {
     }
 
     loadOnboardingData()
-  }, [onboardingId, stepOrder, dispatch])
+  }, [onboardingId, stepOrder, dispatch, navigate])
 
   // Update current step order when stepId changes
   useEffect(() => {
@@ -155,7 +155,8 @@ function OnboardingDetailPage() {
 
   // Handle step completion - navigate to next step or complete
   const handleStepComplete = useCallback(
-    async (stepIndex, step, values) => {
+    // eslint-disable-next-line no-unused-vars
+    async (_stepIndex, _step, _values) => {
       if (!onboarding) return
 
       const nextStepOrder = currentStepOrder + 1
@@ -187,7 +188,8 @@ function OnboardingDetailPage() {
 
   // Handle final form submission
   const handleFinalSubmit = useCallback(
-    async (values) => {
+    // eslint-disable-next-line no-unused-vars
+    async (_values) => {
       if (!onboarding || isReadOnly) return
 
       try {
