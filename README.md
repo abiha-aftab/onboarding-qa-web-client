@@ -6,7 +6,10 @@ A modern React application with authentication, built with Vite, Tailwind CSS, a
 
 - **Instagram-style Login Page** - Beautiful, responsive login interface
 - **User Authentication** - Secure login/logout with token-based authentication
-- **Protected Dashboard** - User dashboard accessible after authentication
+- **Home Dashboard** - Welcome page with onboarding status and quick actions
+- **Onboarding Management** - View and manage all onboarding tasks
+- **Onboarding Flow** - Multi-step onboarding process with progress tracking
+- **Protected Routes** - Secure access to authenticated pages
 - **API Integration** - Centralized API client with automatic token management
 - **Django Backend Integration** - Connected to Django REST API backend
 - **Responsive Design** - Mobile-first design with Tailwind CSS
@@ -191,7 +194,7 @@ This project is configured for automatic deployment to GitHub Pages via GitHub A
      - Deploy to GitHub Pages
    - Your site will be available at: `https://[username].github.io/[repository-name]/`
 
-**Note:** The `base` path in `vite.config.js` is currently set to `/react/`. Update it to match your repository name if different.
+**Note:** The `base` path in `vite.config.js` is set to `/` for root-level deployment. Update it if deploying to a subdirectory.
 
 **Important:** The deploy workflow includes linting and formatting checks. If these fail, the deployment will not proceed.
 
@@ -292,6 +295,28 @@ The app uses token-based authentication with Django backend:
 - **Token Storage:** JWT tokens stored in `localStorage`
 - **Auto Token Injection:** Axios interceptor automatically adds Bearer token to requests
 - **Django Integration:** All endpoints expect Django REST Framework format with trailing slashes
+
+## 🛣️ Routes
+
+The application uses React Router for navigation:
+
+### Public Routes
+- `/login` - Login page (redirects to home if authenticated)
+
+### Protected Routes (require authentication)
+- `/` - Home page/Dashboard - Welcome page showing onboarding status
+  - Shows "Resume Onboarding" button if onboarding is in progress
+  - Shows "View All Onboardings" button if no onboarding in progress
+- `/onboardings` - List all onboardings (pending, in progress, completed, pending review)
+- `/onboarding/:id/step/:stepId` - Onboarding detail page
+  - **In Progress:** Resumes from where user left off, allows editing
+  - **Completed/Pending Review:** View-only mode showing all answers
+  - Supports navigation between steps
+
+### Other Routes
+- `/dashboard` - Legacy dashboard page (still supported)
+- `/404` - Not found page
+- `/500` - Server error page
 
 ## 📝 API Client
 

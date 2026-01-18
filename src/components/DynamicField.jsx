@@ -1,184 +1,126 @@
-import { useField } from 'formik';
+import { useField } from 'formik'
+import TextInput from './form/fields/TextInput'
+import NumberInput from './form/fields/NumberInput'
+import DateInput from './form/fields/DateInput'
+import CheckboxInput from './form/fields/CheckboxInput'
+import FileInput from './form/fields/FileInput'
 
-function DynamicField({ question }) {
-  const fieldName = `question_${question.id}`;
-  const [field, meta, helpers] = useField(fieldName);
+function DynamicField({ question, readOnly = false }) {
+  // Ensure fieldName is always unique - use question.id if available, otherwise throw error
+  // This prevents field name collisions
+  if (!question || !question.id) {
+    console.error('DynamicField: question or question.id is missing', question)
+    return null
+  }
+  const fieldName = `question_${question.id}`
+  const [field, meta, helpers] = useField(fieldName)
 
   const handleChange = (e) => {
-    const { value, checked, files } = e.target;
+    const { value, checked, files, type } = e.target
 
     switch (question.answer_type) {
       case 'number':
-        helpers.setValue(value === '' ? '' : Number(value));
-        break;
+        helpers.setValue(value === '' ? '' : Number(value))
+        break
       case 'boolean':
-        helpers.setValue(checked);
-        break;
+        helpers.setValue(checked)
+        break
       case 'file':
-        helpers.setValue(files?.[0] || null);
-        break;
-      default:
-        helpers.setValue(value);
-    }
-  };
-
-  const renderInput = () => {
-    const baseInputClasses = `w-full px-4 py-3 text-base bg-white border-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFD350] focus:border-[#0F5E7B] transition-all duration-200 ${
-      meta.touched && meta.error ? 'border-red-500' : 'border-gray-200'
-    } hover:border-gray-300`;
-
-    const inputStyle = { color: '#0F5E7B', fontSize: '1rem' };
-    const placeholder = `Enter ${question.question_text.toLowerCase()}`;
-
-    switch (question.answer_type) {
-      case 'text':
-        return (
-          <input
-            {...field}
-            type="text"
-            id={fieldName}
-            name={fieldName}
-            onChange={handleChange}
-            onBlur={field.onBlur}
-            className={`${baseInputClasses} placeholder-gray-400`}
-            style={inputStyle}
-            placeholder={placeholder}
-            aria-required={question.is_required}
-            aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
-            aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
-          />
-        );
-
-      case 'number':
-        return (
-          <input
-            {...field}
-            type="number"
-            id={fieldName}
-            name={fieldName}
-            onChange={handleChange}
-            onBlur={field.onBlur}
-            className={`${baseInputClasses} placeholder-gray-400`}
-            style={inputStyle}
-            placeholder={placeholder}
-            aria-required={question.is_required}
-            aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
-            aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
-          />
-        );
-
+        helpers.setValue(files?.[0] || null)
+        break
       case 'date':
-        return (
-          <input
-            {...field}
-            type="date"
-            id={fieldName}
-            name={fieldName}
-            onChange={handleChange}
-            onBlur={field.onBlur}
-            className={baseInputClasses}
-            style={inputStyle}
-            aria-required={question.is_required}
-            aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
-            aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
-          />
-        );
-
-      case 'boolean':
-        return (
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id={fieldName}
-              name={fieldName}
-              checked={field.value || false}
-              onChange={handleChange}
-              onBlur={field.onBlur}
-              className="w-5 h-5 text-[#0F5E7B] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#FFD350] focus:ring-offset-0"
-              aria-required={question.is_required}
-              aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
-              aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
-            />
-            <label
-              htmlFor={fieldName}
-              className="text-base font-medium"
-              style={{ color: '#0F5E7B' }}
-            >
-              {question.question_text}
-            </label>
-          </div>
-        );
-
-      case 'file':
-        return (
-          <div>
-            <input
-              type="file"
-              id={fieldName}
-              name={fieldName}
-              onChange={handleChange}
-              onBlur={field.onBlur}
-              className={baseInputClasses}
-              style={inputStyle}
-              aria-required={question.is_required}
-              aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
-              aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
-            />
-            {field.value && (
-              <p className="mt-2 text-sm" style={{ color: '#576472' }}>
-                Selected: {field.value.name || 'File selected'}
-              </p>
-            )}
-          </div>
-        );
-
+        // Date input returns YYYY-MM-DD format, store as-is
+        helpers.setValue(value || '')
+        break
       default:
-        return (
-          <input
-            {...field}
-            type="text"
-            id={fieldName}
-            name={fieldName}
-            onChange={handleChange}
-            onBlur={field.onBlur}
-            className={`${baseInputClasses} placeholder-gray-400`}
-            style={inputStyle}
-            placeholder={placeholder}
-            aria-required={question.is_required}
-            aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
-            aria-describedby={meta.touched && meta.error ? `${fieldName}-error` : undefined}
-          />
-        );
+        helpers.setValue(value)
     }
-  };
+  }
 
-  return (
-    <div className="space-y-2">
-      {question.answer_type !== 'boolean' && (
-        <label
-          htmlFor={fieldName}
-          className="block text-base font-semibold tracking-tight"
-          style={{ color: '#0F5E7B', fontSize: '1rem' }}
-        >
-          {question.question_text}
-          {question.is_required && (
-            <span className="text-red-500 ml-1" aria-label="required">*</span>
-          )}
-        </label>
-      )}
-      {renderInput()}
-      {meta.touched && meta.error && (
-        <div
-          id={`${fieldName}-error`}
-          className="text-sm text-red-600 mt-1"
-          role="alert"
-          aria-live="polite"
-        >
-          {meta.error}
-        </div>
-      )}
-    </div>
-  );
+  const baseInputClasses = `w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-white border-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFD350] focus:border-[#0F5E7B] transition-all duration-200 ${
+    meta.touched && meta.error ? 'border-red-500' : 'border-gray-200'
+  } hover:border-gray-300`
+
+  const inputStyle = { color: '#0F5E7B', fontSize: '0.875rem' } // sm:text-base will override on larger screens
+
+  switch (question.answer_type) {
+    case 'text':
+      return (
+        <TextInput
+          field={field}
+          meta={meta}
+          fieldName={fieldName}
+          question={question}
+          handleChange={handleChange}
+          baseInputClasses={baseInputClasses}
+          inputStyle={inputStyle}
+          readOnly={readOnly}
+        />
+      )
+    case 'number':
+      return (
+        <NumberInput
+          field={field}
+          meta={meta}
+          fieldName={fieldName}
+          question={question}
+          handleChange={handleChange}
+          baseInputClasses={baseInputClasses}
+          inputStyle={inputStyle}
+          readOnly={readOnly}
+        />
+      )
+    case 'date':
+      return (
+        <DateInput
+          field={field}
+          meta={meta}
+          fieldName={fieldName}
+          question={question}
+          handleChange={handleChange}
+          baseInputClasses={baseInputClasses}
+          inputStyle={inputStyle}
+          readOnly={readOnly}
+        />
+      )
+    case 'boolean':
+      return (
+        <CheckboxInput
+          field={field}
+          meta={meta}
+          fieldName={fieldName}
+          question={question}
+          handleChange={handleChange}
+          readOnly={readOnly}
+        />
+      )
+    case 'file':
+      return (
+        <FileInput
+          field={field}
+          meta={meta}
+          fieldName={fieldName}
+          question={question}
+          handleChange={handleChange}
+          baseInputClasses={baseInputClasses}
+          inputStyle={inputStyle}
+          readOnly={readOnly}
+        />
+      )
+    default:
+      return (
+        <TextInput
+          field={field}
+          meta={meta}
+          fieldName={fieldName}
+          question={question}
+          handleChange={handleChange}
+          baseInputClasses={baseInputClasses}
+          inputStyle={inputStyle}
+          readOnly={readOnly}
+        />
+      )
+  }
 }
 
-export default DynamicField;
+export default DynamicField

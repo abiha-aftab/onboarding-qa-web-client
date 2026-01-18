@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { getStoreRef } from '../store/storeRef'
+import { showToast } from '../store/slices/uiSlice'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -58,10 +60,15 @@ apiClient.interceptors.response.use(
     return response
   },
   error => {
+    const store = getStoreRef()
+    let errorMessage = 'An error occurred'
+    let errorStatus = 0
+
     // Handle axios errors
     if (error.response) {
       // Server responded with error status (4xx, 5xx)
       const { status, data } = error.response
+      errorStatus = status
 
       // Log error response for debugging
       console.error(
@@ -72,8 +79,28 @@ apiClient.interceptors.response.use(
         }
       )
 
+      // Show toast notification based on error status
+      if (store) {
+        if (status === 404) {
+          errorMessage = data?.detail || data?.message || 'Resource not found'
+          store.dispatch(showToast({ type: 'error', message: errorMessage }))
+        } else if (status === 500) {
+          errorMessage = data?.detail || data?.message || 'Internal server error. Please try again later.'
+          store.dispatch(showToast({ type: 'error', message: errorMessage }))
+        } else if (status === 401) {
+          // Don't show toast for 401 as auth slice handles it
+          errorMessage = data?.detail || data?.message || 'Unauthorized'
+        } else if (status >= 400 && status < 500) {
+          errorMessage = data?.detail || data?.message || data?.error || `Client error: ${status}`
+          store.dispatch(showToast({ type: 'error', message: errorMessage }))
+        } else if (status >= 500) {
+          errorMessage = data?.detail || data?.message || 'Server error. Please try again later.'
+          store.dispatch(showToast({ type: 'error', message: errorMessage }))
+        }
+      }
+
       // Create error object with status and data for consistent error handling
-      const apiError = new Error(data?.message || data?.error || `HTTP error! status: ${status}`)
+      const apiError = new Error(errorMessage)
       apiError.status = status
       apiError.data = data
       apiError.response = error.response
@@ -86,9 +113,13 @@ apiClient.interceptors.response.use(
         message: 'No response received from server',
       })
 
-      const networkError = new Error(
-        'Network error: Unable to reach server. Please check your connection.'
-      )
+      errorMessage = 'Network error: Unable to reach server. Please check your connection.'
+      
+      if (store) {
+        store.dispatch(showToast({ type: 'error', message: errorMessage }))
+      }
+
+      const networkError = new Error(errorMessage)
       networkError.status = 0
       networkError.data = { message: 'Network error' }
 
@@ -97,7 +128,13 @@ apiClient.interceptors.response.use(
       // Error setting up the request
       console.error('[API Request Setup Error]', error.message)
 
-      const setupError = new Error(error.message || 'Request setup error')
+      errorMessage = error.message || 'Request setup error'
+      
+      if (store) {
+        store.dispatch(showToast({ type: 'error', message: errorMessage }))
+      }
+
+      const setupError = new Error(errorMessage)
       setupError.status = 0
       setupError.data = { message: error.message }
 

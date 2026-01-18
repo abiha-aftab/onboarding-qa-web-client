@@ -95,57 +95,115 @@ export const fetchOnboardingStep = async (onboardingId, stepOrder) => {
   }
 };
 
+// Get all onboarding steps with answers from backend API
+export const fetchAllOnboardingSteps = async (onboardingId) => {
+  try {
+    const response = await apiClient.get(`/api/onboarding/${onboardingId}/steps/`);
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching all onboarding steps:', error);
+    throw error;
+  }
+};
+
 // Submit answers for a specific step
 export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQuestions) => {
   try {
     const responses = [];
     
     // Handle empty step questions (completion step - Step 3)
+    // If step has no questions, we still need to submit to mark step as complete
+    // Backend will handle this case
     if (!stepQuestions || stepQuestions.length === 0) {
       const requestData = {
         onboarding_id: onboardingId,
         step_id: stepId,
         responses: [],
       };
-      const response = await apiClient.post('/api/onboarding/user/answer', requestData);
+      const response = await apiClient.post('/api/onboarding/user/answer/', requestData);
       return response.data;
     }
     
+    // Process each question in the step
+    // Skip file questions - they need to be uploaded via separate document endpoint
     stepQuestions.forEach((stepQuestion) => {
       const question = stepQuestion.question;
+      
+      // Skip file questions - backend requires separate document endpoint for file uploads
+      if (question.answer_type === 'file') {
+        console.warn(`Skipping file question ${question.id} - file uploads require separate document endpoint`);
+        return;
+      }
+      
       const key = `question_${question.id}`;
       let answerValue = formValues[key];
 
-      // Handle file uploads: send file name as text
-      if (question.answer_type === 'file') {
-        if (answerValue instanceof File) {
-          answerValue = answerValue.name;
-        } else if (!answerValue || answerValue === '') {
-          // If no file selected and it's required, keep as empty string for validation
-          answerValue = '';
+      // If value is undefined, use default based on type
+      if (answerValue === undefined) {
+        switch (question.answer_type) {
+          case 'boolean':
+            answerValue = false;
+            break;
+          case 'number':
+            answerValue = '';
+            break;
+          default:
+            answerValue = '';
         }
       }
 
       const answer = {};
+      
+      // Handle different answer types according to backend AnswerSerializer
       switch (question.answer_type) {
         case 'text':
-          answer.answer_text = answerValue;
+          // For text, send as string (can be empty string)
+          answer.answer_text = answerValue === null || answerValue === undefined ? '' : String(answerValue);
           break;
         case 'number':
-          answer.answer_number = answerValue === '' ? null : Number(answerValue);
+          // For number, send as number or null (backend expects DecimalField)
+          if (answerValue === '' || answerValue === null || answerValue === undefined) {
+            answer.answer_number = null;
+          } else {
+            // Convert to number, backend will handle decimal conversion
+            const numValue = Number(answerValue);
+            answer.answer_number = isNaN(numValue) ? null : numValue;
+          }
           break;
         case 'date':
-          answer.answer_date = answerValue;
+          // For date, send as date string (YYYY-MM-DD format)
+          if (answerValue === '' || answerValue === null || answerValue === undefined) {
+            answer.answer_date = null;
+          } else {
+            // Ensure date is in YYYY-MM-DD format
+            let dateStr = answerValue;
+            if (answerValue instanceof Date) {
+              dateStr = answerValue.toISOString().split('T')[0];
+            } else if (typeof answerValue === 'string') {
+              // If it's already a string, try to format it
+              const date = new Date(answerValue);
+              if (!isNaN(date.getTime())) {
+                dateStr = date.toISOString().split('T')[0];
+              }
+            }
+            answer.answer_date = dateStr;
+          }
           break;
         case 'boolean':
-          answer.answer_boolean = Boolean(answerValue);
-          break;
-        case 'file':
-          answer.answer_text = answerValue;
+          // For boolean, send as boolean (can be null, but default to false)
+          if (answerValue === null || answerValue === undefined) {
+            answer.answer_boolean = false;
+          } else {
+            answer.answer_boolean = Boolean(answerValue);
+          }
           break;
         default:
-          answer.answer_text = answerValue;
+          // Default to text
+          answer.answer_text = answerValue === null || answerValue === undefined ? '' : String(answerValue);
       }
+      
+      // Always include the response so backend can validate required fields
+      // Backend AnswerSerializer requires at least one field, so we ensure at least one is set
       responses.push({ question_id: question.id, answer });
     });
 
@@ -155,7 +213,7 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
       responses: responses,
     };
 
-    const response = await apiClient.post('/api/onboarding/user/answer', requestData);
+    const response = await apiClient.post('/api/onboarding/user/answer/', requestData);
     return response.data;
   } catch (error) {
     console.error('Error submitting step answer:', error);
