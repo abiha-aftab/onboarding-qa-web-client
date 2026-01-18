@@ -21,9 +21,9 @@ const uiSlice = createSlice({
     },
     hideAlert: (state, action) => {
       const alertId = action.payload
-      state.alerts = state.alerts.filter((alert) => alert.id !== alertId)
+      state.alerts = state.alerts.filter(alert => alert.id !== alertId)
     },
-    clearAlerts: (state) => {
+    clearAlerts: state => {
       state.alerts = []
     },
     showToast: (state, action) => {
@@ -38,9 +38,9 @@ const uiSlice = createSlice({
     },
     hideToast: (state, action) => {
       const toastId = action.payload
-      state.toasts = state.toasts.filter((toast) => toast.id !== toastId)
+      state.toasts = state.toasts.filter(toast => toast.id !== toastId)
     },
-    clearToasts: (state) => {
+    clearToasts: state => {
       state.toasts = []
     },
     setGlobalLoading: (state, action) => {

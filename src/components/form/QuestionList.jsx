@@ -11,24 +11,34 @@ function QuestionList({ questions, stepId, readOnly = false }) {
         const question = stepQuestion?.question
         // Skip if question is completely missing
         if (!question) {
-          console.warn(`QuestionList: Skipping question at index ${index} - missing question object`, stepQuestion)
+          console.warn(
+            `QuestionList: Skipping question at index ${index} - missing question object`,
+            stepQuestion
+          )
           return null
         }
-        
+
         // Use stepQuestion.id as fallback if question.id is missing (shouldn't happen after backend fix, but be defensive)
         const questionId = question.id ?? stepQuestion.id
         if (!questionId) {
-          console.warn(`QuestionList: Skipping question at index ${index} - missing both question.id and stepQuestion.id`, stepQuestion)
+          console.warn(
+            `QuestionList: Skipping question at index ${index} - missing both question.id and stepQuestion.id`,
+            stepQuestion
+          )
           return null
         }
-        
+
         // Ensure question has an id for DynamicField (create a temporary one if needed)
         const questionWithId = { ...question, id: questionId }
-        
+
         // Use questionId for unique key - this ensures each field is uniquely identified
         const safeStepId = stepId ?? 'step'
         return (
-          <DynamicField key={`${safeStepId}_${questionId}`} question={questionWithId} readOnly={readOnly} />
+          <DynamicField
+            key={`${safeStepId}_${questionId}`}
+            question={questionWithId}
+            readOnly={readOnly}
+          />
         )
       })}
     </div>

@@ -83,7 +83,8 @@ apiClient.interceptors.response.use(
           errorMessage = data?.detail || data?.message || 'Resource not found'
           store.dispatch(showToast({ type: 'error', message: errorMessage }))
         } else if (status === 500) {
-          errorMessage = data?.detail || data?.message || 'Internal server error. Please try again later.'
+          errorMessage =
+            data?.detail || data?.message || 'Internal server error. Please try again later.'
           store.dispatch(showToast({ type: 'error', message: errorMessage }))
         } else if (status === 401) {
           // Don't show toast for 401 as auth slice handles it
@@ -112,7 +113,7 @@ apiClient.interceptors.response.use(
       })
 
       errorMessage = 'Network error: Unable to reach server. Please check your connection.'
-      
+
       if (store) {
         store.dispatch(showToast({ type: 'error', message: errorMessage }))
       }
@@ -127,7 +128,7 @@ apiClient.interceptors.response.use(
       console.error('[API Request Setup Error]', error.message)
 
       errorMessage = error.message || 'Request setup error'
-      
+
       if (store) {
         store.dispatch(showToast({ type: 'error', message: errorMessage }))
       }

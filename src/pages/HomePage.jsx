@@ -8,8 +8,8 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 function HomePage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { user } = useSelector((state) => state.auth)
-  const { pendingOnboardings, onboardings, loading } = useSelector((state) => state.onboarding)
+  const { user } = useSelector(state => state.auth)
+  const { pendingOnboardings, onboardings, loading } = useSelector(state => state.onboarding)
 
   useEffect(() => {
     // Fetch onboardings on mount
@@ -18,7 +18,7 @@ function HomePage() {
 
   // Check if there's an onboarding in progress
   const inProgressOnboarding = pendingOnboardings?.find(
-    (o) => o.status === 'in_progress' || o.status === 'inprogress'
+    o => o.status === 'in_progress' || o.status === 'inprogress'
   )
 
   const handleResumeOnboarding = () => {
@@ -48,7 +48,10 @@ function HomePage() {
         {/* Greetings Section */}
         <div className="bg-gradient-to-r from-cyan-50 to-yellow-50 rounded-xl shadow-lg p-6 sm:p-8 mb-6 border-2 border-gray-200">
           <div className="text-center">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4" style={{ color: '#0F5E7B' }}>
+            <h1
+              className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4"
+              style={{ color: '#0F5E7B' }}
+            >
               Welcome, {user?.email?.split('@')[0] || 'User'}!
             </h1>
             <p className="text-base sm:text-lg md:text-xl mb-2" style={{ color: '#576472' }}>
@@ -70,7 +73,8 @@ function HomePage() {
           </div>
           <div className="bg-white rounded-lg shadow-md p-4 border-2 border-gray-200 text-center">
             <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: '#0F5E7B' }}>
-              {onboardings?.filter((o) => o.status === 'completed' || o.status === 'COMPLETED').length || 0}
+              {onboardings?.filter(o => o.status === 'completed' || o.status === 'COMPLETED')
+                .length || 0}
             </div>
             <div className="text-sm sm:text-base text-gray-600">Completed</div>
           </div>
@@ -109,7 +113,10 @@ function HomePage() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3" style={{ color: '#0F5E7B' }}>
+                <h2
+                  className="text-xl sm:text-2xl md:text-3xl font-bold mb-3"
+                  style={{ color: '#0F5E7B' }}
+                >
                   Resume Your Onboarding
                 </h2>
                 <p className="text-base sm:text-lg mb-2" style={{ color: '#576472' }}>
@@ -147,7 +154,10 @@ function HomePage() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3" style={{ color: '#0F5E7B' }}>
+                <h2
+                  className="text-xl sm:text-2xl md:text-3xl font-bold mb-3"
+                  style={{ color: '#0F5E7B' }}
+                >
                   Ready to Get Started?
                 </h2>
                 <p className="text-base sm:text-lg mb-2" style={{ color: '#576472' }}>

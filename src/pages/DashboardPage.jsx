@@ -10,8 +10,8 @@ import Alert from '../components/ui/Alert'
 function DashboardPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const alerts = useSelector((state) => state.ui.alerts)
-  const { selectedOnboarding, pendingOnboardings, loading } = useSelector((state) => state.onboarding)
+  const alerts = useSelector(state => state.ui.alerts)
+  const { selectedOnboarding, pendingOnboardings, loading } = useSelector(state => state.onboarding)
 
   // Check if there are any pending onboardings
   const hasPendingOnboardings = pendingOnboardings && pendingOnboardings.length > 0
@@ -39,7 +39,7 @@ function DashboardPage() {
   return (
     <DashboardLayout sidebar={<OnboardingList />}>
       <div className="mb-6">
-        {alerts.map((alert) => (
+        {alerts.map(alert => (
           <Alert key={alert.id} alert={alert} />
         ))}
 
@@ -67,7 +67,10 @@ function DashboardPage() {
                   />
                 </svg>
               </div>
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 break-words" style={{ color: '#0F5E7B' }}>
+              <h2
+                className="text-lg sm:text-xl md:text-2xl font-bold mb-2 break-words"
+                style={{ color: '#0F5E7B' }}
+              >
                 No Pending Onboardings
               </h2>
               <p className="text-sm sm:text-base mb-4 sm:mb-6" style={{ color: '#576472' }}>
@@ -90,11 +93,15 @@ function DashboardPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 text-center border-2 border-gray-100">
-            <p className="text-sm sm:text-base md:text-lg font-semibold mb-2 break-words" style={{ color: '#0F5E7B' }}>
+            <p
+              className="text-sm sm:text-base md:text-lg font-semibold mb-2 break-words"
+              style={{ color: '#0F5E7B' }}
+            >
               Select an onboarding task to get started
             </p>
             <p className="text-xs sm:text-sm text-gray-600">
-              Choose an onboarding task from the sidebar to begin or continue your onboarding process.
+              Choose an onboarding task from the sidebar to begin or continue your onboarding
+              process.
             </p>
           </div>
         )}

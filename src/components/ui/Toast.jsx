@@ -16,7 +16,7 @@ function Toast({ toast }) {
     }
   }, [id, duration, dispatch])
 
-  const getToastStyles = (type) => {
+  const getToastStyles = type => {
     switch (type) {
       case 'success':
         return {

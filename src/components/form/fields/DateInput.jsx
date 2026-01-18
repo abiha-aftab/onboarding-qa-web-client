@@ -1,8 +1,17 @@
 import QuestionLabel from '../QuestionLabel'
 
-function DateInput({ field, meta, fieldName, question, handleChange, baseInputClasses, inputStyle, readOnly = false }) {
+function DateInput({
+  field,
+  meta,
+  fieldName,
+  question,
+  handleChange,
+  baseInputClasses,
+  inputStyle,
+  readOnly = false,
+}) {
   // Format date value for input (YYYY-MM-DD format required)
-  const formatDateValue = (value) => {
+  const formatDateValue = value => {
     if (!value) return ''
     if (typeof value === 'string') {
       // If it's already in YYYY-MM-DD format, use it
@@ -18,7 +27,7 @@ function DateInput({ field, meta, fieldName, question, handleChange, baseInputCl
     return ''
   }
 
-  const handleFocus = (e) => {
+  const handleFocus = e => {
     // Ensure date picker opens on focus/click
     e.target.showPicker?.()
   }

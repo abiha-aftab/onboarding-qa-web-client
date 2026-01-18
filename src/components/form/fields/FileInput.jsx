@@ -1,6 +1,15 @@
 import QuestionLabel from '../QuestionLabel'
 
-function FileInput({ field, meta, fieldName, question, handleChange, baseInputClasses, inputStyle, readOnly = false }) {
+function FileInput({
+  field,
+  meta,
+  fieldName,
+  question,
+  handleChange,
+  baseInputClasses,
+  inputStyle,
+  readOnly = false,
+}) {
   return (
     <div className="space-y-2">
       <QuestionLabel htmlFor={fieldName} required={question.is_required}>

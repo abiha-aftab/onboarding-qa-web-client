@@ -22,8 +22,8 @@ function OnboardingFormContainer() {
     formData,
     onboardingComplete,
     loadingSteps,
-  } = useSelector((state) => state.onboarding)
-  
+  } = useSelector(state => state.onboarding)
+
   const isLoadingRef = useRef(false)
 
   // Load steps when onboarding is selected
@@ -38,7 +38,10 @@ function OnboardingFormContainer() {
       try {
         let stepToLoad = 1
 
-        if (selectedOnboarding.status === 'in_progress' || selectedOnboarding.status === 'inprogress') {
+        if (
+          selectedOnboarding.status === 'in_progress' ||
+          selectedOnboarding.status === 'inprogress'
+        ) {
           // Resume at the next step after completed_steps
           stepToLoad = (selectedOnboarding.completed_steps || 0) + 1
           stepToLoad = Math.max(1, Math.min(stepToLoad, selectedOnboarding.total_steps || 3))
@@ -58,7 +61,8 @@ function OnboardingFormContainer() {
           // The steps are already loaded, status will be updated when step is submitted
         } else if (selectedOnboarding.status === 'pending_review') {
           // Load all completed steps
-          const completedSteps = selectedOnboarding.completed_steps || selectedOnboarding.total_steps || 3
+          const completedSteps =
+            selectedOnboarding.completed_steps || selectedOnboarding.total_steps || 3
           await dispatch(
             fetchOnboardingSteps({
               onboardingId: selectedOnboarding.id,
@@ -144,7 +148,7 @@ function OnboardingFormContainer() {
 
   // Handle form data changes
   const handleFormDataChange = useCallback(
-    (newFormData) => {
+    newFormData => {
       dispatch(updateFormData(newFormData))
     },
     [dispatch]
@@ -153,7 +157,7 @@ function OnboardingFormContainer() {
   // Handle final form submission
   const handleFinalSubmit = useCallback(
     // eslint-disable-next-line no-unused-vars
-    async (_values) => {
+    async _values => {
       if (!selectedOnboarding) return
 
       try {
@@ -183,7 +187,12 @@ function OnboardingFormContainer() {
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 px-6 py-8 text-center">
           <div className="mb-4">
             <div className="w-20 h-20 mx-auto bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-12 h-12 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -193,12 +202,15 @@ function OnboardingFormContainer() {
               </svg>
             </div>
           </div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2" style={{ color: '#0F5E7B' }}>
+          <h2
+            className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
+            style={{ color: '#0F5E7B' }}
+          >
             Pending for Review
           </h2>
           <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
-            Your onboarding has been submitted successfully and is now pending review. You will be notified once it
-            has been reviewed.
+            Your onboarding has been submitted successfully and is now pending review. You will be
+            notified once it has been reviewed.
           </p>
         </div>
       </div>
@@ -219,7 +231,12 @@ function OnboardingFormContainer() {
         <div className="bg-gradient-to-r from-green-50 to-cyan-50 px-6 py-8 text-center">
           <div className="mb-4">
             <div className="w-20 h-20 mx-auto bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-12 h-12 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -229,11 +246,15 @@ function OnboardingFormContainer() {
               </svg>
             </div>
           </div>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2" style={{ color: '#0F5E7B' }}>
+          <h2
+            className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
+            style={{ color: '#0F5E7B' }}
+          >
             Onboarding Completed Successfully!
           </h2>
           <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
-            Thank you for completing the onboarding process. Your information has been submitted and will be reviewed.
+            Thank you for completing the onboarding process. Your information has been submitted and
+            will be reviewed.
           </p>
         </div>
       </div>
@@ -269,9 +290,11 @@ function OnboardingFormContainer() {
         <div className="bg-gradient-to-r from-cyan-50 to-yellow-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-
               <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words leading-tight" style={{ color: '#0F5E7B' }}>
+                <h3
+                  className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words leading-tight"
+                  style={{ color: '#0F5E7B' }}
+                >
                   {selectedOnboarding.onboarding_title?.replace(/\d+$/, '').trim() || 'Onboarding'}
                 </h3>
                 <p className="text-xs sm:text-sm mt-1" style={{ color: '#576472' }}>

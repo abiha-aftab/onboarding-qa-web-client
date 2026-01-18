@@ -29,7 +29,7 @@ export const selectOnboarding = createAsyncThunk(
   async (onboardingId, { getState, rejectWithValue }) => {
     try {
       const state = getState()
-      const onboarding = state.onboarding.onboardings.find((o) => o.id === onboardingId)
+      const onboarding = state.onboarding.onboardings.find(o => o.id === onboardingId)
       if (!onboarding) {
         throw new Error('Onboarding not found')
       }
@@ -48,7 +48,7 @@ export const fetchOnboardingSteps = createAsyncThunk(
     try {
       // Fetch all steps at once with answers
       const steps = await fetchAllOnboardingSteps(onboardingId)
-      
+
       // Determine the current step order to display
       // If stepOrder is provided, use it; otherwise use the first incomplete step
       let currentStepOrderToUse = stepOrder
@@ -57,13 +57,13 @@ export const fetchOnboardingSteps = createAsyncThunk(
         // For now, just use completed_steps + 1 or 1 if no steps completed
         currentStepOrderToUse = completedSteps + 1
       }
-      
+
       // Ensure currentStepOrder is within valid range
       if (currentStepOrderToUse < 1) currentStepOrderToUse = 1
       if (steps.length > 0 && currentStepOrderToUse > steps.length) {
         currentStepOrderToUse = steps.length
       }
-      
+
       return { steps, currentStepOrder: currentStepOrderToUse }
     } catch (error) {
       return rejectWithValue({
@@ -78,12 +78,17 @@ export const submitStep = createAsyncThunk(
   'onboarding/submitStep',
   async ({ onboardingId, stepId, formValues, stepQuestions }, { rejectWithValue }) => {
     try {
-      const response = await submitStepAnswerService(onboardingId, stepId, formValues, stepQuestions)
-      
+      const response = await submitStepAnswerService(
+        onboardingId,
+        stepId,
+        formValues,
+        stepQuestions
+      )
+
       // Refresh onboardings after submission
       const status = await getOnboardingStatus()
       const pending = await getPendingOnboardings()
-      
+
       return {
         response,
         status,
@@ -139,7 +144,7 @@ const onboardingSlice = createSlice({
       // Filter out File objects to prevent non-serializable values in Redux state
       // File objects will be handled separately during submission
       const serializableData = {}
-      Object.keys(action.payload).forEach((key) => {
+      Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         // Only store serializable values (exclude File objects)
         if (!(value instanceof File)) {
@@ -148,7 +153,7 @@ const onboardingSlice = createSlice({
       })
       state.formData = { ...state.formData, ...serializableData }
     },
-    clearFormData: (state) => {
+    clearFormData: state => {
       state.formData = {}
     },
     setCurrentStepOrder: (state, action) => {
@@ -157,7 +162,7 @@ const onboardingSlice = createSlice({
     setOnboardingComplete: (state, action) => {
       state.onboardingComplete = action.payload
     },
-    clearSelectedOnboarding: (state) => {
+    clearSelectedOnboarding: state => {
       state.selectedOnboarding = null
       state.onboardingSteps = []
       state.currentStepOrder = 1
@@ -166,20 +171,20 @@ const onboardingSlice = createSlice({
     },
     addStep: (state, action) => {
       const step = action.payload
-      const exists = state.onboardingSteps.some((s) => s.id === step.id || s.order === step.order)
+      const exists = state.onboardingSteps.some(s => s.id === step.id || s.order === step.order)
       if (!exists) {
         state.onboardingSteps.push(step)
         state.onboardingSteps.sort((a, b) => (a.order || 0) - (b.order || 0))
       }
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     // Fetch Onboardings
     builder
-      .addCase(fetchOnboardings.pending, (state) => {
+      .addCase(fetchOnboardings.pending, state => {
         state.loading = true
         state.error = null
       })
@@ -209,7 +214,7 @@ const onboardingSlice = createSlice({
 
     // Fetch Steps
     builder
-      .addCase(fetchOnboardingSteps.pending, (state) => {
+      .addCase(fetchOnboardingSteps.pending, state => {
         state.loadingSteps = true
         state.error = null
       })
@@ -218,16 +223,16 @@ const onboardingSlice = createSlice({
         // Normalize steps: ensure order field exists (map from step_number if needed)
         const normalizedSteps = action.payload.steps.map(step => ({
           ...step,
-          order: step.order || step.step_number || 0
+          order: step.order || step.step_number || 0,
         }))
         state.onboardingSteps = normalizedSteps
         state.currentStepOrder = action.payload.currentStepOrder
-        
+
         // Populate formData with existing answers from all steps
         const formData = {}
-        normalizedSteps.forEach((step) => {
+        normalizedSteps.forEach(step => {
           if (step.step_questions) {
-            step.step_questions.forEach((stepQuestion) => {
+            step.step_questions.forEach(stepQuestion => {
               const question = stepQuestion.question
               const userAnswer = stepQuestion.user_answer
               if (question && userAnswer) {
@@ -258,7 +263,7 @@ const onboardingSlice = createSlice({
 
     // Submit Step
     builder
-      .addCase(submitStep.pending, (state) => {
+      .addCase(submitStep.pending, state => {
         state.loading = true
         state.error = null
       })
@@ -267,17 +272,18 @@ const onboardingSlice = createSlice({
         state.onboardingStatus = action.payload.status
         state.pendingOnboardings = action.payload.pendingOnboardings
         state.onboardings = action.payload.status.onboardings || []
-        
+
         // Update selected onboarding if it exists and the ID matches
         // Only update if status or completed_steps changed to avoid unnecessary re-renders
         if (state.selectedOnboarding) {
           const updated = action.payload.status.onboardings?.find(
-            (o) => o.id === state.selectedOnboarding.id
+            o => o.id === state.selectedOnboarding.id
           )
-          if (updated && (
-            updated.status !== state.selectedOnboarding.status ||
-            updated.completed_steps !== state.selectedOnboarding.completed_steps
-          )) {
+          if (
+            updated &&
+            (updated.status !== state.selectedOnboarding.status ||
+              updated.completed_steps !== state.selectedOnboarding.completed_steps)
+          ) {
             state.selectedOnboarding = updated
             // Navigate to next step after submission
             // completed_steps is the last completed step, so next step is completed_steps + 1
@@ -303,7 +309,7 @@ const onboardingSlice = createSlice({
       .addCase(fetchNextStep.fulfilled, (state, action) => {
         if (action.payload) {
           const step = action.payload
-          const exists = state.onboardingSteps.some((s) => s.id === step.id || s.order === step.order)
+          const exists = state.onboardingSteps.some(s => s.id === step.id || s.order === step.order)
           if (!exists) {
             state.onboardingSteps.push(step)
             state.onboardingSteps.sort((a, b) => (a.order || 0) - (b.order || 0))

@@ -301,9 +301,11 @@ The app uses token-based authentication with Django backend:
 The application uses React Router for navigation:
 
 ### Public Routes
+
 - `/login` - Login page (redirects to home if authenticated)
 
 ### Protected Routes (require authentication)
+
 - `/` - Home page/Dashboard - Welcome page showing onboarding status
   - Shows "Resume Onboarding" button if onboarding is in progress
   - Shows "View All Onboardings" button if no onboarding in progress
@@ -314,6 +316,7 @@ The application uses React Router for navigation:
   - Supports navigation between steps
 
 ### Other Routes
+
 - `/dashboard` - Legacy dashboard page (still supported)
 - `/404` - Not found page
 - `/500` - Server error page

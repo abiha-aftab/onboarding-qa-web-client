@@ -1,6 +1,15 @@
 import QuestionLabel from '../QuestionLabel'
 
-function TextInput({ field, meta, fieldName, question, handleChange, baseInputClasses, inputStyle, readOnly = false }) {
+function TextInput({
+  field,
+  meta,
+  fieldName,
+  question,
+  handleChange,
+  baseInputClasses,
+  inputStyle,
+  readOnly = false,
+}) {
   const placeholder = `Enter ${question.question_text.toLowerCase()}`
 
   return (

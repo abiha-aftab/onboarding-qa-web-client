@@ -1,4 +1,10 @@
-function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, horizontal = false }) {
+function StepIndicator({
+  totalSteps,
+  currentStepOrder,
+  completedSteps,
+  steps,
+  horizontal = false,
+}) {
   // Horizontal layout for mobile
   if (horizontal) {
     return (
@@ -6,7 +12,7 @@ function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, ho
         <div className="flex items-center justify-between gap-2">
           {Array.from({ length: totalSteps }, (_, i) => {
             const stepOrder = i + 1
-            const step = steps?.find((s) => (s.order || s.step_number) === stepOrder)
+            const step = steps?.find(s => (s.order || s.step_number) === stepOrder)
             const isCompleted = completedSteps.has(stepOrder)
             const isActive = stepOrder === currentStepOrder
 
@@ -18,8 +24,8 @@ function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, ho
                       isCompleted
                         ? 'bg-[#FFD350] text-[#0F5E7B] shadow-md'
                         : isActive
-                        ? 'bg-[#0F5E7B] text-white shadow-lg scale-110'
-                        : 'bg-gray-200 text-gray-500'
+                          ? 'bg-[#0F5E7B] text-white shadow-lg scale-110'
+                          : 'bg-gray-200 text-gray-500'
                     }`}
                   >
                     {isCompleted ? (
@@ -37,7 +43,11 @@ function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, ho
                   {step && (
                     <span
                       className={`text-xs font-semibold mt-1 text-center truncate max-w-[60px] ${
-                        isActive ? 'text-[#0F5E7B]' : isCompleted ? 'text-[#0F5E7B]' : 'text-gray-400'
+                        isActive
+                          ? 'text-[#0F5E7B]'
+                          : isCompleted
+                            ? 'text-[#0F5E7B]'
+                            : 'text-gray-400'
                       }`}
                       title={step.title}
                     >
@@ -66,7 +76,7 @@ function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, ho
       <div className="flex flex-col space-y-3 sm:space-y-4">
         {Array.from({ length: totalSteps }, (_, i) => {
           const stepOrder = i + 1
-          const step = steps?.find((s) => (s.order || s.step_number) === stepOrder)
+          const step = steps?.find(s => (s.order || s.step_number) === stepOrder)
           const isCompleted = completedSteps.has(stepOrder)
           const isActive = stepOrder === currentStepOrder
 
@@ -80,8 +90,8 @@ function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, ho
                     isCompleted
                       ? 'bg-[#FFD350] text-[#0F5E7B] shadow-md'
                       : isActive
-                      ? 'bg-[#0F5E7B] text-white shadow-lg scale-110'
-                      : 'bg-gray-200 text-gray-500'
+                        ? 'bg-[#0F5E7B] text-white shadow-lg scale-110'
+                        : 'bg-gray-200 text-gray-500'
                   }`}
                 >
                   {isCompleted ? (
@@ -112,9 +122,7 @@ function StepIndicator({ totalSteps, currentStepOrder, completedSteps, steps, ho
                 >
                   {stepTitle}
                 </span>
-                {isActive && (
-                  <span className="text-xs text-gray-500 mt-1 block">Current step</span>
-                )}
+                {isActive && <span className="text-xs text-gray-500 mt-1 block">Current step</span>}
               </div>
             </div>
           )

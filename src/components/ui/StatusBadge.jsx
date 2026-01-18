@@ -1,7 +1,7 @@
 function StatusBadge({ status, className = '' }) {
-  const getStatusConfig = (status) => {
+  const getStatusConfig = status => {
     const normalizedStatus = status?.toLowerCase() || 'pending'
-    
+
     switch (normalizedStatus) {
       case 'in_progress':
       case 'inprogress':

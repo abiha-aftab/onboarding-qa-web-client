@@ -1,6 +1,10 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchOnboardings, selectOnboarding, clearSelectedOnboarding } from '../../store/slices/onboardingSlice'
+import {
+  fetchOnboardings,
+  selectOnboarding,
+  clearSelectedOnboarding,
+} from '../../store/slices/onboardingSlice'
 import OnboardingCard from './OnboardingCard'
 import OnboardingListHeader from './OnboardingListHeader'
 import LoadingSpinner from '../ui/LoadingSpinner'
@@ -8,14 +12,9 @@ import StepIndicator from '../form/StepIndicator'
 
 function OnboardingList() {
   const dispatch = useDispatch()
-  const { 
-    pendingOnboardings, 
-    selectedOnboarding, 
-    loading,
-    onboardingSteps,
-    currentStepOrder,
-  } = useSelector((state) => state.onboarding)
-  
+  const { pendingOnboardings, selectedOnboarding, loading, onboardingSteps, currentStepOrder } =
+    useSelector(state => state.onboarding)
+
   // Calculate completed steps from onboardingSteps
   const completedSteps = new Set()
   if (selectedOnboarding && onboardingSteps.length > 0) {
@@ -29,9 +28,13 @@ function OnboardingList() {
     dispatch(fetchOnboardings())
   }, [dispatch])
 
-  const handleSelectOnboarding = (onboarding) => {
+  const handleSelectOnboarding = onboarding => {
     // Don't allow opening if onboarding is completed or pending review
-    if (onboarding.status === 'completed' || onboarding.status === 'COMPLETED' || onboarding.status === 'pending_review') {
+    if (
+      onboarding.status === 'completed' ||
+      onboarding.status === 'COMPLETED' ||
+      onboarding.status === 'pending_review'
+    ) {
       return
     }
 
@@ -67,7 +70,7 @@ function OnboardingList() {
             <>
               {/* Show onboarding list when no onboarding is selected */}
               <div className="space-y-3">
-                {pendingOnboardings.map((onboarding) => {
+                {pendingOnboardings.map(onboarding => {
                   const isActive = selectedOnboarding?.id === onboarding.id
                   const disabled =
                     onboarding.status === 'completed' ||

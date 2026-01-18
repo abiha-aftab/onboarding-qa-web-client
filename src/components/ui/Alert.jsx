@@ -5,7 +5,7 @@ function Alert({ alert }) {
   const dispatch = useDispatch()
   const { id, type, message, dismissible } = alert
 
-  const getAlertStyles = (type) => {
+  const getAlertStyles = type => {
     switch (type) {
       case 'success':
         return {

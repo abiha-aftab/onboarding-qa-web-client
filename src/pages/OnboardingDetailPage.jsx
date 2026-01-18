@@ -25,7 +25,7 @@ function OnboardingDetailPage() {
   const { id, stepId } = useParams()
   const onboardingId = parseInt(id, 10)
   const stepOrder = parseInt(stepId, 10)
-  const alerts = useSelector((state) => state.ui.alerts)
+  const alerts = useSelector(state => state.ui.alerts)
   const {
     onboardings,
     selectedOnboarding,
@@ -35,10 +35,10 @@ function OnboardingDetailPage() {
     onboardingComplete,
     loadingSteps,
     loading,
-  } = useSelector((state) => state.onboarding)
+  } = useSelector(state => state.onboarding)
 
   // Find onboarding from list or use selected one
-  const onboarding = selectedOnboarding || onboardings.find((o) => o.id === onboardingId)
+  const onboarding = selectedOnboarding || onboardings.find(o => o.id === onboardingId)
 
   // Determine if this onboarding is read-only (completed or pending_review)
   const isReadOnly =
@@ -60,10 +60,10 @@ function OnboardingDetailPage() {
         // Fetch all onboardings first
         const fetchResult = await dispatch(fetchOnboardings()).unwrap()
         const allOnboardings = fetchResult.status?.onboardings || []
-        
+
         // Find the onboarding from the fetched list
-        const foundOnboarding = allOnboardings.find((o) => o.id === onboardingId)
-        
+        const foundOnboarding = allOnboardings.find(o => o.id === onboardingId)
+
         if (!foundOnboarding) {
           throw new Error(`Onboarding with ID ${onboardingId} not found`)
         }
@@ -81,16 +81,17 @@ function OnboardingDetailPage() {
         // Use the onboarding we found
         const onboardingForSteps = foundOnboarding
         const completedSteps = onboardingForSteps.completed_steps || 0
-        const isCompletedOrReview = 
-          onboardingForSteps.status === 'completed' || 
-          onboardingForSteps.status === 'COMPLETED' || 
+        const isCompletedOrReview =
+          onboardingForSteps.status === 'completed' ||
+          onboardingForSteps.status === 'COMPLETED' ||
           onboardingForSteps.status === 'pending_review'
-        
-        const targetStepOrder = stepOrder || (
-          isCompletedOrReview 
-            ? (onboardingForSteps.completed_steps || onboardingForSteps.total_steps || 1)
-            : Math.min(completedSteps + 1, onboardingForSteps.total_steps || 3)
-        ) || 1
+
+        const targetStepOrder =
+          stepOrder ||
+          (isCompletedOrReview
+            ? onboardingForSteps.completed_steps || onboardingForSteps.total_steps || 1
+            : Math.min(completedSteps + 1, onboardingForSteps.total_steps || 3)) ||
+          1
 
         await dispatch(
           fetchOnboardingSteps({
@@ -178,7 +179,7 @@ function OnboardingDetailPage() {
 
   // Handle form data changes
   const handleFormDataChange = useCallback(
-    (newFormData) => {
+    newFormData => {
       if (!isReadOnly) {
         dispatch(updateFormData(newFormData))
       }
@@ -189,7 +190,7 @@ function OnboardingDetailPage() {
   // Handle final form submission
   const handleFinalSubmit = useCallback(
     // eslint-disable-next-line no-unused-vars
-    async (_values) => {
+    async _values => {
       if (!onboarding || isReadOnly) return
 
       try {
@@ -227,14 +228,19 @@ function OnboardingDetailPage() {
     return (
       <DashboardLayout sidebar={<OnboardingList />}>
         <div className="mb-6">
-          {alerts.map((alert) => (
+          {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
           ))}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-300">
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 px-6 py-8 text-center">
               <div className="mb-4">
                 <div className="w-20 h-20 mx-auto bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -244,12 +250,15 @@ function OnboardingDetailPage() {
                   </svg>
                 </div>
               </div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2" style={{ color: '#0F5E7B' }}>
+              <h2
+                className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
+                style={{ color: '#0F5E7B' }}
+              >
                 Pending for Review
               </h2>
               <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
-                Your onboarding has been submitted successfully and is now pending review. You will be notified once it
-                has been reviewed.
+                Your onboarding has been submitted successfully and is now pending review. You will
+                be notified once it has been reviewed.
               </p>
               <button
                 onClick={() => navigate('/onboardings')}
@@ -265,18 +274,27 @@ function OnboardingDetailPage() {
   }
 
   // Show completed message
-  if (onboardingComplete || onboarding.status === 'completed' || onboarding.status === 'COMPLETED') {
+  if (
+    onboardingComplete ||
+    onboarding.status === 'completed' ||
+    onboarding.status === 'COMPLETED'
+  ) {
     return (
       <DashboardLayout sidebar={<OnboardingList />}>
         <div className="mb-6">
-          {alerts.map((alert) => (
+          {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
           ))}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-green-300">
             <div className="bg-gradient-to-r from-green-50 to-cyan-50 px-6 py-8 text-center">
               <div className="mb-4">
                 <div className="w-20 h-20 mx-auto bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -286,11 +304,15 @@ function OnboardingDetailPage() {
                   </svg>
                 </div>
               </div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2" style={{ color: '#0F5E7B' }}>
+              <h2
+                className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
+                style={{ color: '#0F5E7B' }}
+              >
                 Onboarding Completed Successfully!
               </h2>
               <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
-                Thank you for completing the onboarding process. Your information has been submitted and will be reviewed.
+                Thank you for completing the onboarding process. Your information has been submitted
+                and will be reviewed.
               </p>
               <button
                 onClick={() => navigate('/onboardings')}
@@ -310,7 +332,7 @@ function OnboardingDetailPage() {
     return (
       <DashboardLayout sidebar={<OnboardingList />}>
         <div className="mb-6">
-          {alerts.map((alert) => (
+          {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
           ))}
           <div className="bg-white rounded-xl shadow-lg p-8 text-center border-2 border-gray-100">
@@ -342,12 +364,15 @@ function OnboardingDetailPage() {
   }
 
   // Ensure currentStepOrder is within valid range
-  const validCurrentStepOrder = Math.max(1, Math.min(currentStepOrder || stepOrder || 1, onboardingSteps.length))
+  const validCurrentStepOrder = Math.max(
+    1,
+    Math.min(currentStepOrder || stepOrder || 1, onboardingSteps.length)
+  )
 
   return (
     <DashboardLayout sidebar={<OnboardingList />}>
       <div className="mb-6">
-        {alerts.map((alert) => (
+        {alerts.map(alert => (
           <Alert key={alert.id} alert={alert} />
         ))}
 
@@ -357,11 +382,15 @@ function OnboardingDetailPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words leading-tight" style={{ color: '#0F5E7B' }}>
+                  <h3
+                    className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold break-words leading-tight"
+                    style={{ color: '#0F5E7B' }}
+                  >
                     {onboarding.onboarding_title?.replace(/\d+$/, '').trim() || 'Onboarding'}
                   </h3>
                   <p className="text-xs sm:text-sm mt-1" style={{ color: '#576472' }}>
-                    Step {validCurrentStepOrder} of {onboarding.total_steps || onboardingSteps.length}
+                    Step {validCurrentStepOrder} of{' '}
+                    {onboarding.total_steps || onboardingSteps.length}
                     {isReadOnly && ' (View Only)'}
                   </p>
                 </div>

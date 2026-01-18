@@ -6,8 +6,8 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
     onboarding.status === 'in_progress' || onboarding.status === 'inprogress'
       ? (onboarding.completed_steps || 0) + 1
       : onboarding.status === 'pending_review'
-      ? onboarding.completed_steps || onboarding.total_steps || 3
-      : 1
+        ? onboarding.completed_steps || onboarding.total_steps || 3
+        : 1
   const totalSteps = onboarding.total_steps || 3
 
   const borderColor = isActive ? '#0F5E7B' : getStatusColor(onboarding.status)
@@ -20,7 +20,7 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
 
   const handleClick = () => {
     if (disabled) return
-    
+
     if (isActive) {
       onDeselect()
     } else {
@@ -72,11 +72,7 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
                 <div
                   key={stepNum}
                   className={`flex-1 h-2 rounded ${
-                    isCompleted
-                      ? 'bg-green-500'
-                      : isCurrent
-                      ? 'bg-blue-500'
-                      : 'bg-gray-200'
+                    isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-gray-200'
                   }`}
                   title={`Step ${stepNum}${isCompleted ? ' (Completed)' : isCurrent ? ' (Current)' : ''}`}
                 />

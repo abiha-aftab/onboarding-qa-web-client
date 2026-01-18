@@ -1,5 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import { login as loginService, logout as logoutService, getMe, isAuthenticated, getCurrentUser } from '../../services/authService'
+import {
+  login as loginService,
+  logout as logoutService,
+  getMe,
+  isAuthenticated,
+  getCurrentUser,
+} from '../../services/authService'
 
 // Async thunks
 export const loginUser = createAsyncThunk(
@@ -18,37 +24,31 @@ export const loginUser = createAsyncThunk(
   }
 )
 
-export const logoutUser = createAsyncThunk(
-  'auth/logout',
-  async () => {
-    try {
-      await logoutService()
-      return null
-    } catch {
-      // Even if logout fails, clear local state
-      return null
-    }
+export const logoutUser = createAsyncThunk('auth/logout', async () => {
+  try {
+    await logoutService()
+    return null
+  } catch {
+    // Even if logout fails, clear local state
+    return null
   }
-)
+})
 
-export const checkAuth = createAsyncThunk(
-  'auth/checkAuth',
-  async (_, { rejectWithValue }) => {
-    try {
-      if (isAuthenticated()) {
-        const userData = await getMe()
-        const currentUser = getCurrentUser()
-        return currentUser || { email: userData.email || userData.user?.email }
-      }
-      return null
-    } catch (error) {
-      return rejectWithValue({
-        message: error?.data?.message || error?.message || 'Auth check failed',
-        status: error?.status,
-      })
+export const checkAuth = createAsyncThunk('auth/checkAuth', async (_, { rejectWithValue }) => {
+  try {
+    if (isAuthenticated()) {
+      const userData = await getMe()
+      const currentUser = getCurrentUser()
+      return currentUser || { email: userData.email || userData.user?.email }
     }
+    return null
+  } catch (error) {
+    return rejectWithValue({
+      message: error?.data?.message || error?.message || 'Auth check failed',
+      status: error?.status,
+    })
   }
-)
+})
 
 const initialState = {
   user: null,
@@ -66,19 +66,19 @@ const authSlice = createSlice({
       state.user = action.payload
       state.isAuthenticated = !!action.payload
     },
-    clearAuth: (state) => {
+    clearAuth: state => {
       state.user = null
       state.isAuthenticated = false
       state.error = null
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     // Login
     builder
-      .addCase(loginUser.pending, (state) => {
+      .addCase(loginUser.pending, state => {
         state.loading = true
         state.error = null
       })
@@ -98,16 +98,16 @@ const authSlice = createSlice({
 
     // Logout
     builder
-      .addCase(logoutUser.pending, (state) => {
+      .addCase(logoutUser.pending, state => {
         state.loading = true
       })
-      .addCase(logoutUser.fulfilled, (state) => {
+      .addCase(logoutUser.fulfilled, state => {
         state.loading = false
         state.user = null
         state.isAuthenticated = false
         state.error = null
       })
-      .addCase(logoutUser.rejected, (state) => {
+      .addCase(logoutUser.rejected, state => {
         state.loading = false
         state.user = null
         state.isAuthenticated = false
@@ -116,7 +116,7 @@ const authSlice = createSlice({
 
     // Check Auth
     builder
-      .addCase(checkAuth.pending, (state) => {
+      .addCase(checkAuth.pending, state => {
         state.checkingAuth = true
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
@@ -130,7 +130,7 @@ const authSlice = createSlice({
         }
         state.error = null
       })
-      .addCase(checkAuth.rejected, (state) => {
+      .addCase(checkAuth.rejected, state => {
         state.checkingAuth = false
         state.user = null
         state.isAuthenticated = false

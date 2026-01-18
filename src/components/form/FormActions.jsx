@@ -1,11 +1,4 @@
-function FormActions({
-  isFirstStep,
-  isLastStep,
-  isSubmitting,
-  hasErrors,
-  onBack,
-  onNext,
-}) {
+function FormActions({ isFirstStep, isLastStep, isSubmitting, hasErrors, onBack, onNext }) {
   return (
     <div
       className={`flex ${isFirstStep ? 'justify-end' : 'justify-between'} items-center pt-4 sm:pt-6 border-t border-gray-200 gap-2 sm:gap-4`}
@@ -21,7 +14,12 @@ function FormActions({
               : 'bg-gray-100 text-[#0F5E7B] hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98]'
           }`}
         >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-4 h-4 sm:w-5 sm:h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -72,7 +70,12 @@ function FormActions({
           ) : (
             <>
               <span>Next</span>
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -121,7 +124,12 @@ function FormActions({
           ) : (
             <>
               <span>Submit</span>
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

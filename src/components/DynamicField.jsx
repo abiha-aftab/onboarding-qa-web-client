@@ -12,13 +12,13 @@ function DynamicField({ question, readOnly = false }) {
   // Use a static fallback for invalid questions to avoid impure Math.random()
   const fieldName = question?.id ? `question_${question.id}` : 'question_invalid'
   const [field, meta, helpers] = useField(fieldName)
-  
+
   if (!question || !question.id) {
     console.error('DynamicField: question or question.id is missing', question)
     return null
   }
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { value, checked, files } = e.target
 
     switch (question.answer_type) {
