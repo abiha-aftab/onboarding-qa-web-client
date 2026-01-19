@@ -6,6 +6,7 @@ import {
   updateFormData,
   setOnboardingComplete,
   fetchOnboardings,
+  setCurrentStepOrder,
 } from '../../store/slices/onboardingSlice'
 import { showToast } from '../../store/slices/uiSlice'
 import MultiStepForm from '../MultiStepForm'
@@ -150,6 +151,16 @@ function OnboardingFormContainer() {
   const handleFormDataChange = useCallback(
     newFormData => {
       dispatch(updateFormData(newFormData))
+    },
+    [dispatch]
+  )
+
+  // Handle step changes (for back/forward navigation)
+  const handleStepChange = useCallback(
+    (stepIndex, step) => {
+      if (step && step.order) {
+        dispatch(setCurrentStepOrder(step.order))
+      }
     },
     [dispatch]
   )
@@ -330,6 +341,7 @@ function OnboardingFormContainer() {
         currentStepOrder={currentStepOrder}
         initialValues={formData}
         onFormDataChange={handleFormDataChange}
+        onStepChange={handleStepChange}
       />
     </div>
   )

@@ -167,7 +167,7 @@ const onboardingSlice = createSlice({
       state.onboardingSteps = []
       state.currentStepOrder = 1
       state.onboardingComplete = false
-      state.formData = {}
+      state.formData = {} // Clear form data when deselecting onboarding
     },
     addStep: (state, action) => {
       const step = action.payload
@@ -193,6 +193,29 @@ const onboardingSlice = createSlice({
         state.onboardingStatus = action.payload.status
         state.pendingOnboardings = action.payload.pendingOnboardings
         state.onboardings = action.payload.status.onboardings || []
+        
+        // If selected onboarding no longer exists in the list, clear it and form data
+        if (state.selectedOnboarding) {
+          const stillExists = state.onboardings.some(
+            o => o.id === state.selectedOnboarding.id
+          )
+          if (!stillExists) {
+            state.selectedOnboarding = null
+            state.onboardingSteps = []
+            state.currentStepOrder = 1
+            state.onboardingComplete = false
+            state.formData = {}
+          } else {
+            // Update selected onboarding with latest data
+            const updated = state.onboardings.find(
+              o => o.id === state.selectedOnboarding.id
+            )
+            if (updated) {
+              state.selectedOnboarding = updated
+            }
+          }
+        }
+        
         state.error = null
       })
       .addCase(fetchOnboardings.rejected, (state, action) => {
@@ -207,6 +230,7 @@ const onboardingSlice = createSlice({
         state.onboardingSteps = []
         state.currentStepOrder = 1
         state.onboardingComplete = false
+        state.formData = {} // Clear form data when selecting a new onboarding
       })
       .addCase(selectOnboarding.rejected, (state, action) => {
         state.error = action.payload

@@ -55,23 +55,32 @@ function MultiStepForm({
 
   const hasQuestions = sortedStepQuestions.length > 0
 
-  // Sync currentStepOrder with props if provided (only when prop changes, not when state changes)
+  // Sync currentStepOrder with props if provided (only when prop changes externally)
   const prevPropStepOrderRef = useRef(propCurrentStepOrder)
+  const isInternalNavigationRef = useRef(false)
+  
   useEffect(() => {
-    // Only sync if the prop actually changed (not when currentStepOrder changes)
+    // Skip sync if we're doing internal navigation (back/forward button)
+    if (isInternalNavigationRef.current) {
+      isInternalNavigationRef.current = false
+      return
+    }
+    
+    // Only sync if the prop changed externally (not from our own navigation)
     if (
       propCurrentStepOrder !== undefined &&
-      propCurrentStepOrder !== prevPropStepOrderRef.current
+      propCurrentStepOrder !== prevPropStepOrderRef.current &&
+      propCurrentStepOrder !== currentStepOrder
     ) {
       const stepExists = normalizedSteps.some(s => s.order === propCurrentStepOrder)
       if (stepExists) {
         setCurrentStepOrder(propCurrentStepOrder)
+        prevPropStepOrderRef.current = propCurrentStepOrder
       }
-      prevPropStepOrderRef.current = propCurrentStepOrder
     }
-  }, [propCurrentStepOrder, normalizedSteps])
+  }, [propCurrentStepOrder, normalizedSteps, currentStepOrder])
 
-  // Sync when steps are loaded
+  // Sync when steps are loaded - ensure current step exists
   useEffect(() => {
     if (normalizedSteps.length > 0) {
       const stepForOrder = normalizedSteps.find(
@@ -91,25 +100,6 @@ function MultiStepForm({
       }
     }
   }, [normalizedSteps, currentStepOrder])
-
-  // Navigate to next step when it becomes available in normalizedSteps
-  // This handles the case where fetchNextStep loads a new step
-  useEffect(() => {
-    if (propCurrentStepOrder !== undefined) {
-      const stepForPropOrder = normalizedSteps.find(s => s.order === propCurrentStepOrder)
-      if (stepForPropOrder) {
-        // Step exists in normalizedSteps
-        if (propCurrentStepOrder !== currentStepOrder) {
-          // Navigate to the step specified by Redux
-          setCurrentStepOrder(propCurrentStepOrder)
-          const stepIndex = normalizedSteps.indexOf(stepForPropOrder)
-          if (onStepChange) {
-            onStepChange(stepIndex, stepForPropOrder)
-          }
-        }
-      }
-    }
-  }, [normalizedSteps, propCurrentStepOrder, currentStepOrder, onStepChange])
 
   const initialValues = useMemo(() => {
     // Start with provided initial values from parent (formData) or empty object
@@ -344,31 +334,40 @@ function MultiStepForm({
   )
 
   const handleBack = useCallback(
-    currentFormValues => {
+    (currentFormValues) => {
       // Don't go back if already on first step
       if (currentStepOrder <= 1) {
         return
       }
 
+      const prevOrder = currentStepOrder - 1
+
+      // Find the previous step
+      const prevStep = normalizedSteps.find(s => (s.order || s.step_number) === prevOrder)
+
+      if (!prevStep) {
+        return
+      }
+
       // Save current form values to parent state before going back
+      // This ensures data is preserved when navigating back
       if (currentFormValues && onFormDataChange) {
         onFormDataChange(currentFormValues)
       }
 
-      const prevOrder = currentStepOrder - 1
-
-      // Find the previous step (users can navigate back to any previous step)
-      const prevStep = normalizedSteps.find(s => (s.order || s.step_number) === prevOrder)
-
-      if (prevStep) {
-        // Update step order - Formik will reinitialize with saved values from parent state
-        setCurrentStepOrder(prevOrder)
-
-        // Notify about step change
-        const prevIndex = normalizedSteps.indexOf(prevStep)
-        if (onStepChange) {
-          onStepChange(prevIndex, prevStep)
-        }
+      // Set flag to prevent useEffect from interfering
+      isInternalNavigationRef.current = true
+      
+      // Update the ref to prevent useEffect from resetting
+      prevPropStepOrderRef.current = prevOrder
+      
+      // Update local state immediately - this will trigger Formik reinitialization via key change
+      setCurrentStepOrder(prevOrder)
+      
+      // Update Redux state to keep it in sync (async, so do after local state)
+      const prevIndex = normalizedSteps.indexOf(prevStep)
+      if (onStepChange) {
+        onStepChange(prevIndex, prevStep)
       }
     },
     [currentStepOrder, normalizedSteps, onStepChange, onFormDataChange]
@@ -588,7 +587,10 @@ function MultiStepForm({
                   isLastStep={isLastStep}
                   isSubmitting={isSubmitting}
                   hasErrors={hasQuestions && currentStepHasErrors}
-                  onBack={() => handleBack(values)}
+                  onBack={(e) => {
+                    e?.preventDefault?.()
+                    handleBack(values)
+                  }}
                   onNext={() =>
                     handleNext(validateForm, setTouched, setErrors, values, errors, setSubmitting)
                   }
