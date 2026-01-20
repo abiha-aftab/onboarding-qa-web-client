@@ -238,6 +238,17 @@ function OnboardingDetailPage() {
     [dispatch, onboarding, currentStepOrder, onboardingSteps.length, onboardingId, navigate]
   )
 
+  // Handle step back navigation
+  const handleStepBack = useCallback(
+    (prevStepOrder, _prevStep) => {
+      if (!onboarding || prevStepOrder < 1) return
+      
+      // Navigate to previous step
+      navigate(`/onboarding/${onboardingId}/step/${prevStepOrder}`)
+    },
+    [onboarding, onboardingId, navigate]
+  )
+
   // Handle form data changes
   const handleFormDataChange = useCallback(
     newFormData => {
@@ -483,6 +494,7 @@ function OnboardingDetailPage() {
               onboardingId={onboarding.id}
               onSubmitStep={handleStepSubmit}
               onStepComplete={handleStepComplete}
+              onStepBack={handleStepBack}
               onSubmit={handleFinalSubmit}
               totalSteps={onboarding.total_steps || onboardingSteps.length}
               currentStepOrder={validCurrentStepOrder}

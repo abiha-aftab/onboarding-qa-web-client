@@ -15,6 +15,7 @@ function MultiStepForm({
   initialValues: providedInitialValues,
   onStepChange,
   onStepComplete,
+  onStepBack,
   onboardingId,
   totalSteps = 3,
   currentStepOrder: propCurrentStepOrder,
@@ -372,9 +373,14 @@ function MultiStepForm({
         if (onStepChange) {
           onStepChange(prevIndex, prevStep)
         }
+
+        // Trigger navigation callback to update URL
+        if (onStepBack) {
+          onStepBack(prevOrder, prevStep)
+        }
       }
     },
-    [currentStepOrder, normalizedSteps, onStepChange, onFormDataChange]
+    [currentStepOrder, normalizedSteps, onStepChange, onFormDataChange, onStepBack]
   )
 
   const handleSubmit = useCallback(
