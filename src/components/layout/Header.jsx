@@ -43,7 +43,7 @@ function Header() {
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => navigate('/')}
-              className="cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none p-0"
+              className="hover:opacity-80 transition-opacity duration-200 bg-transparent border-none p-0"
               style={{ backgroundColor: 'transparent' }}
               aria-label="Go to home"
             >

@@ -115,7 +115,7 @@ function OnboardingsPage() {
               return (
                 <div
                   key={onboarding.id}
-                  className="bg-white rounded-xl shadow-md border-2 border-gray-200 hover:border-[#0F5E7B] transition-all duration-200 cursor-pointer overflow-hidden"
+                  className="bg-white rounded-xl shadow-md border-2 border-gray-200 hover:border-[#0F5E7B] transition-all duration-200 overflow-hidden"
                   onClick={() => handleOnboardingClick(onboarding)}
                 >
                   <div className="p-4 sm:p-6">

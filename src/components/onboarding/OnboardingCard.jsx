@@ -30,9 +30,9 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
 
   return (
     <div
-      className={`bg-white border-2 rounded-lg p-3 sm:p-4 shadow-sm transition-all cursor-pointer ${
+      className={`bg-white border-2 rounded-lg p-3 sm:p-4 shadow-sm transition-all ${
         isActive ? 'ring-2 ring-offset-2' : ''
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      } ${disabled ? 'opacity-50' : ''}`}
       style={{
         borderColor,
         ringColor: isActive ? '#0F5E7B' : 'transparent',

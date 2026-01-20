@@ -81,17 +81,43 @@ function OnboardingDetailPage() {
         // Use the onboarding we found
         const onboardingForSteps = foundOnboarding
         const completedSteps = onboardingForSteps.completed_steps || 0
+        const totalSteps = onboardingForSteps.total_steps || 3
         const isCompletedOrReview =
           onboardingForSteps.status === 'completed' ||
           onboardingForSteps.status === 'COMPLETED' ||
           onboardingForSteps.status === 'pending_review'
 
-        const targetStepOrder =
-          stepOrder ||
-          (isCompletedOrReview
-            ? onboardingForSteps.completed_steps || onboardingForSteps.total_steps || 1
-            : Math.min(completedSteps + 1, onboardingForSteps.total_steps || 3)) ||
-          1
+        // Determine the target step order
+        let targetStepOrder
+        if (stepOrder) {
+          // User is trying to access a specific step from URL
+          if (isCompletedOrReview) {
+            // For read-only onboardings, allow viewing any step
+            targetStepOrder = Math.min(Math.max(1, stepOrder), totalSteps)
+          } else {
+            const maxAllowedStep = completedSteps + 1
+            if (stepOrder > maxAllowedStep) {
+              // User is trying to access a future step - redirect to the correct step
+              const correctStep = Math.min(maxAllowedStep, totalSteps)
+              dispatch(
+                showToast({
+                  type: 'warning',
+                  message: `Please complete step ${completedSteps + 1} first before accessing future steps.`,
+                })
+              )
+              navigate(`/onboarding/${onboardingId}/step/${correctStep}`, { replace: true })
+              return 
+            }
+            targetStepOrder = Math.min(Math.max(1, stepOrder), totalSteps)
+          }
+        } else {
+          // No step specified in URL, determine default step
+          if (isCompletedOrReview) {
+            targetStepOrder = completedSteps || totalSteps || 1
+          } else {
+            targetStepOrder = Math.min(completedSteps + 1, totalSteps) || 1
+          }
+        }
 
         await dispatch(
           fetchOnboardingSteps({
@@ -115,12 +141,39 @@ function OnboardingDetailPage() {
     loadOnboardingData()
   }, [onboardingId, stepOrder, dispatch, navigate])
 
-  // Update current step order when stepId changes
+  // Validate and update current step order when stepId changes
   useEffect(() => {
-    if (stepOrder && stepOrder !== currentStepOrder) {
+    if (!onboarding || !stepOrder) return
+
+    const completedSteps = onboarding.completed_steps || 0
+    const totalSteps = onboarding.total_steps || onboardingSteps.length || 3
+    const isCompletedOrReview =
+      onboarding.status === 'completed' ||
+      onboarding.status === 'COMPLETED' ||
+      onboarding.status === 'pending_review'
+
+    // Validate step access for active onboardings
+    if (!isCompletedOrReview) {
+      const maxAllowedStep = completedSteps + 1
+      if (stepOrder > maxAllowedStep) {
+        // User is trying to access a future step - redirect to the correct step
+        const correctStep = Math.min(maxAllowedStep, totalSteps)
+        dispatch(
+          showToast({
+            type: 'warning',
+            message: `Please complete step ${completedSteps + 1} first before accessing future steps.`,
+          })
+        )
+        navigate(`/onboarding/${onboardingId}/step/${correctStep}`, { replace: true })
+        return
+      }
+    }
+
+    // Update step order if valid
+    if (stepOrder !== currentStepOrder && stepOrder >= 1 && stepOrder <= totalSteps) {
       dispatch(setCurrentStepOrder(stepOrder))
     }
-  }, [stepOrder, currentStepOrder, dispatch])
+  }, [stepOrder, currentStepOrder, dispatch, onboarding, onboardingSteps.length, onboardingId, navigate])
 
   // Handle step submission
   const handleStepSubmit = useCallback(

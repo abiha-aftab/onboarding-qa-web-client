@@ -24,7 +24,7 @@ function NumberInput({
         value={field.value ?? ''}
         onChange={handleChange}
         onBlur={field.onBlur}
-        className={`${baseInputClasses} placeholder-gray-400 ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        className={`${baseInputClasses} placeholder-gray-400 ${readOnly ? 'bg-gray-100' : ''}`}
         style={inputStyle}
         placeholder={placeholder}
         disabled={readOnly}
