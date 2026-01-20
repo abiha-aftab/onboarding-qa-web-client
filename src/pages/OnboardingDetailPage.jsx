@@ -106,7 +106,7 @@ function OnboardingDetailPage() {
                 })
               )
               navigate(`/onboarding/${onboardingId}/step/${correctStep}`, { replace: true })
-              return 
+              return
             }
             targetStepOrder = Math.min(Math.max(1, stepOrder), totalSteps)
           }
@@ -173,7 +173,15 @@ function OnboardingDetailPage() {
     if (stepOrder !== currentStepOrder && stepOrder >= 1 && stepOrder <= totalSteps) {
       dispatch(setCurrentStepOrder(stepOrder))
     }
-  }, [stepOrder, currentStepOrder, dispatch, onboarding, onboardingSteps.length, onboardingId, navigate])
+  }, [
+    stepOrder,
+    currentStepOrder,
+    dispatch,
+    onboarding,
+    onboardingSteps.length,
+    onboardingId,
+    navigate,
+  ])
 
   // Handle step submission
   const handleStepSubmit = useCallback(

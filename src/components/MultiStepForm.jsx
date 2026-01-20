@@ -344,7 +344,7 @@ function MultiStepForm({
   )
 
   const handleBack = useCallback(
-    (currentFormValues) => {
+    currentFormValues => {
       // Don't go back if already on first step
       if (currentStepOrder <= 1) {
         return
