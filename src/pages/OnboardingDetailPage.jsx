@@ -274,7 +274,7 @@ function OnboardingDetailPage() {
   // Show loading state
   if (loading || loadingSteps || !onboarding) {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout sidebar={<OnboardingList hideHeader={true} />}>
         <div className="mb-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <LoadingSpinner size="lg" text="Loading onboarding..." />
@@ -287,7 +287,7 @@ function OnboardingDetailPage() {
   // Show pending review message
   if (onboarding.status === 'pending_review') {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -341,7 +341,7 @@ function OnboardingDetailPage() {
     onboarding.status === 'COMPLETED'
   ) {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -391,7 +391,7 @@ function OnboardingDetailPage() {
   // Show steps
   if (onboardingSteps.length === 0) {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -431,7 +431,7 @@ function OnboardingDetailPage() {
   )
 
   return (
-    <DashboardLayout sidebar={<OnboardingList />}>
+    <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
       <div className="mb-6">
         {alerts.map(alert => (
           <Alert key={alert.id} alert={alert} />
@@ -463,31 +463,34 @@ function OnboardingDetailPage() {
           </div>
         </div>
 
-        {/* Horizontal Progress Indicator for Mobile */}
-        <div className="lg:hidden mb-4">
-          <StepIndicator
-            totalSteps={onboarding.total_steps || onboardingSteps.length}
-            currentStepOrder={validCurrentStepOrder}
-            completedSteps={completedSteps}
-            steps={onboardingSteps}
-            horizontal={true}
-          />
-        </div>
+        {/* Form Section */}
+        <div>
+          {/* Horizontal Progress Indicator for Mobile */}
+          <div className="lg:hidden mb-4">
+            <StepIndicator
+              totalSteps={onboarding.total_steps || onboardingSteps.length}
+              currentStepOrder={validCurrentStepOrder}
+              completedSteps={completedSteps}
+              steps={onboardingSteps}
+              horizontal={true}
+            />
+          </div>
 
-        {/* MultiStepForm - will be read-only if onboarding is completed/pending_review */}
-        <div className="mt-4 sm:mt-6">
-          <MultiStepForm
-            steps={onboardingSteps}
-            onboardingId={onboarding.id}
-            onSubmitStep={handleStepSubmit}
-            onStepComplete={handleStepComplete}
-            onSubmit={handleFinalSubmit}
-            totalSteps={onboarding.total_steps || onboardingSteps.length}
-            currentStepOrder={validCurrentStepOrder}
-            initialValues={formData}
-            onFormDataChange={handleFormDataChange}
-            readOnly={isReadOnly}
-          />
+          {/* MultiStepForm - will be read-only if onboarding is completed/pending_review */}
+          <div className="mt-4 sm:mt-6 lg:mt-0">
+            <MultiStepForm
+              steps={onboardingSteps}
+              onboardingId={onboarding.id}
+              onSubmitStep={handleStepSubmit}
+              onStepComplete={handleStepComplete}
+              onSubmit={handleFinalSubmit}
+              totalSteps={onboarding.total_steps || onboardingSteps.length}
+              currentStepOrder={validCurrentStepOrder}
+              initialValues={formData}
+              onFormDataChange={handleFormDataChange}
+              readOnly={isReadOnly}
+            />
+          </div>
         </div>
       </div>
     </DashboardLayout>

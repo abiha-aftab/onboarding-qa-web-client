@@ -1,4 +1,8 @@
-function OnboardingListHeader() {
+function OnboardingListHeader({ hideHeading = false }) {
+  if (hideHeading) {
+    return null
+  }
+
   return (
     <div className="mb-4 sm:mb-6">
       <h2
