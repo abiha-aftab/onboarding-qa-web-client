@@ -88,6 +88,7 @@ export const fetchAllOnboardingSteps = async onboardingId => {
   }
 }
 
+<<<<<<< Updated upstream
 const uploadDocument = async (onboardingId, questionId, file) => {
   const formData = new FormData()
   formData.append('onboarding_id', onboardingId)
@@ -101,6 +102,8 @@ const uploadDocument = async (onboardingId, questionId, file) => {
 }
 
 // Submit answers for a specific step
+=======
+>>>>>>> Stashed changes
 export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQuestions) => {
   try {
     const responses = []
@@ -116,6 +119,7 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
       return response.data
     }
 
+<<<<<<< Updated upstream
     // Upload files first (file questions require separate endpoint)
     for (const stepQuestion of stepQuestions) {
       const question = stepQuestion.question
@@ -150,6 +154,8 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
 
     // Process each question in the step
     // Skip file questions - they need to be uploaded via separate document endpoint
+=======
+>>>>>>> Stashed changes
     stepQuestions.forEach(stepQuestion => {
       const question = stepQuestion.question
 

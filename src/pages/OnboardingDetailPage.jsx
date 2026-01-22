@@ -237,6 +237,7 @@ function OnboardingDetailPage() {
   )
 
   const handleStepBack = useCallback(
+    // eslint-disable-next-line no-unused-vars
     (prevStepOrder, _prevStep) => {
       if (!onboarding || prevStepOrder < 1) return
       navigate(`/onboarding/${onboardingId}/step/${prevStepOrder}`)
