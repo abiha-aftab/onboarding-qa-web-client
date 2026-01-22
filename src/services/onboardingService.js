@@ -88,9 +88,23 @@ export const fetchAllOnboardingSteps = async onboardingId => {
   }
 }
 
+const uploadDocument = async (onboardingId, questionId, file) => {
+  const formData = new FormData()
+  formData.append('onboarding_id', onboardingId)
+  formData.append('question_id', questionId)
+  formData.append('file', file)
+
+  const response = await apiClient.post('/api/answer/upload/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return response.data
+}
+
+// Submit answers for a specific step
 export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQuestions) => {
   try {
     const responses = []
+    const uploadedFiles = {}
 
     if (!stepQuestions || stepQuestions.length === 0) {
       const requestData = {
@@ -102,6 +116,40 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
       return response.data
     }
 
+    // Upload files first (file questions require separate endpoint)
+    for (const stepQuestion of stepQuestions) {
+      const question = stepQuestion.question
+      if (question.answer_type !== 'file') continue
+
+      const key = `question_${question.id}`
+      const value = formValues[key]
+
+      if (value instanceof File) {
+        const uploadResult = await uploadDocument(onboardingId, question.id, value)
+        uploadedFiles[key] = {
+          file_name: uploadResult.file_name,
+          file_url: uploadResult.file_url,
+          document_id: uploadResult.document_id,
+        }
+      } else if (value && typeof value === 'object') {
+        // Already uploaded or placeholder data
+        if (value.file_url || value.url) {
+          uploadedFiles[key] = {
+            file_name: value.file_name || value.name,
+            file_url: value.file_url || value.url,
+            document_id: value.document_id,
+          }
+        }
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        uploadedFiles[key] = {
+          file_name: value.split('/').pop(),
+          file_url: value,
+        }
+      }
+    }
+
+    // Process each question in the step
+    // Skip file questions - they need to be uploaded via separate document endpoint
     stepQuestions.forEach(stepQuestion => {
       const question = stepQuestion.question
 
@@ -181,7 +229,7 @@ export const submitStepAnswer = async (onboardingId, stepId, formValues, stepQue
     }
 
     const response = await apiClient.post('/api/onboarding/user/answer/', requestData)
-    return response.data
+    return { data: response.data, uploadedFiles }
   } catch (error) {
     console.error('Error submitting step answer:', error)
     throw error
