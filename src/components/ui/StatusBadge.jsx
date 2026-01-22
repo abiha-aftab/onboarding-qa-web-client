@@ -25,6 +25,20 @@ function StatusBadge({ status, className = '' }) {
           textColor: 'text-green-800',
           borderColor: '#22c55e',
         }
+      case 'approved':
+        return {
+          text: 'Approved',
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800',
+          borderColor: '#16a34a',
+        }
+      case 'rejected':
+        return {
+          text: 'Rejected',
+          bgColor: 'bg-red-100',
+          textColor: 'text-red-800',
+          borderColor: '#ef4444',
+        }
       case 'pending':
       default:
         return {
@@ -45,7 +59,7 @@ function StatusBadge({ status, className = '' }) {
     >
       {config.text}
     </span>
-  )
-}
+  ) 
 
+}
 export default StatusBadge

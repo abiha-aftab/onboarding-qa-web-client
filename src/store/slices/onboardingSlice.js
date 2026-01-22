@@ -78,7 +78,7 @@ export const submitStep = createAsyncThunk(
   'onboarding/submitStep',
   async ({ onboardingId, stepId, formValues, stepQuestions }, { rejectWithValue }) => {
     try {
-      const response = await submitStepAnswerService(
+      const { data, uploadedFiles } = await submitStepAnswerService(
         onboardingId,
         stepId,
         formValues,
@@ -90,7 +90,8 @@ export const submitStep = createAsyncThunk(
       const pending = await getPendingOnboardings()
 
       return {
-        response,
+        response: data,
+        uploadedFiles,
         status,
         pendingOnboardings: pending,
       }
@@ -272,6 +273,10 @@ const onboardingSlice = createSlice({
         state.onboardingStatus = action.payload.status
         state.pendingOnboardings = action.payload.pendingOnboardings
         state.onboardings = action.payload.status.onboardings || []
+
+        if (action.payload.uploadedFiles && Object.keys(action.payload.uploadedFiles).length > 0) {
+          state.formData = { ...state.formData, ...action.payload.uploadedFiles }
+        }
 
         // Update selected onboarding if it exists and the ID matches
         // Only update if status or completed_steps changed to avoid unnecessary re-renders

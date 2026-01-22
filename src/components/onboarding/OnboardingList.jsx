@@ -16,7 +16,6 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
   const { pendingOnboardings, selectedOnboarding, loading, onboardingSteps, currentStepOrder, onboardings } =
     useSelector(state => state.onboarding)
 
-  // Calculate completed steps from onboardingSteps
   const completedSteps = new Set()
   if (selectedOnboarding && onboardingSteps.length > 0) {
     const completedCount = selectedOnboarding.completed_steps || 0
@@ -30,11 +29,12 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
   }, [dispatch])
 
   const handleSelectOnboarding = onboarding => {
-    // Don't allow opening if onboarding is completed or pending review
     if (
       onboarding.status === 'completed' ||
       onboarding.status === 'COMPLETED' ||
-      onboarding.status === 'pending_review'
+      onboarding.status === 'pending_review' ||
+      onboarding.status === 'approved' ||
+      onboarding.status === 'rejected'
     ) {
       return
     }
@@ -46,11 +46,9 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
     }
   }
 
-  // Get the current onboarding for status display (from prop, selected, or all onboardings)
   const currentOnboarding = propOnboarding || selectedOnboarding || 
     (onboardings && onboardings.length > 0 ? onboardings[0] : null)
 
-  // Get onboarding status message based on status with professional styling
   const getOnboardingTaskMessage = () => {
     if (!currentOnboarding) {
       return {
@@ -171,7 +169,6 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
     <div className="h-full">
       <OnboardingListHeader hideHeading={hideHeader} />
 
-      {/* Onboarding Tasks Status Section */}
       <div className={`${taskMessage.bgGradient} ${taskMessage.borderColor} border rounded-xl p-4 mb-4 shadow-sm`}>
         <div className="flex items-center gap-3">
           <div className={`${taskMessage.iconBg} ${taskMessage.iconColor} p-2 rounded-lg flex-shrink-0`}>
@@ -183,7 +180,6 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
         </div>
       </div>
 
-      {/* Status Timeline - Show when onboarding is selected or available */}
       {currentOnboarding && (
         <div className="mb-4">
           <OnboardingStatusTimeline status={currentOnboarding.status} />
@@ -196,7 +192,6 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
         </div>
       ) : pendingOnboardings.length > 0 ? (
         <>
-          {/* Show Step Indicator in sidebar when onboarding is selected (Desktop only) */}
           {selectedOnboarding && onboardingSteps.length > 0 ? (
             <div className="hidden lg:block">
               <StepIndicator
@@ -209,14 +204,15 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
             </div>
           ) : (
             <>
-              {/* Show onboarding list when no onboarding is selected */}
               <div className="space-y-3">
                 {pendingOnboardings.map(onboarding => {
                   const isActive = selectedOnboarding?.id === onboarding.id
                   const disabled =
                     onboarding.status === 'completed' ||
                     onboarding.status === 'COMPLETED' ||
-                    onboarding.status === 'pending_review'
+                    onboarding.status === 'pending_review' ||
+                    onboarding.status === 'approved' ||
+                    onboarding.status === 'rejected'
 
                   return (
                     <OnboardingCard

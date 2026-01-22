@@ -1,47 +1,39 @@
 function OnboardingStatusTimeline({ status, className = '' }) {
-  // Normalize status to handle different case variations
   const normalizeStatus = status => {
     if (!status) return 'pending'
     const normalized = status.toLowerCase().trim()
-    
-    // Handle variations
     if (normalized === 'inprogress') return 'in_progress'
     if (normalized === 'completed' || normalized === 'COMPLETED') return 'completed'
-    
     return normalized
   }
 
   const currentStatus = normalizeStatus(status)
 
-  // Define statuses in order (only 3: Pending, In Progress, Completed)
   const statuses = [
     { key: 'pending', label: 'Pending', icon: 'clock' },
     { key: 'in_progress', label: 'In Progress', icon: 'spinner' },
-    { key: 'completed', label: 'Completed', icon: 'check' },
+    { key: 'completed', label: 'In Review', icon: 'check' },
+    { key: 'approved_rejected', label: 'Approved/Rejected', icon: 'approved_rejected' },
   ]
 
-  // Map current status to one of the 3 statuses
-  // If status is pending_review, approved, or rejected, map to completed
   const mapToTimelineStatus = status => {
     if (status === 'pending') return 'pending'
     if (status === 'in_progress' || status === 'inprogress') return 'in_progress'
-    // All other statuses (completed, pending_review, approved, rejected) map to completed
+    if (status === 'completed' || status === 'COMPLETED' || status === 'pending_review') return 'completed'
+    if (status === 'approved' || status === 'rejected') return 'approved_rejected'
     return 'completed'
   }
 
   const timelineStatus = mapToTimelineStatus(currentStatus)
   const currentStatusIndex = statuses.findIndex(s => s.key === timelineStatus)
-  
-  // Determine status state for each step
+
   const getStatusState = index => {
     if (index < currentStatusIndex) return 'completed'
     if (index === currentStatusIndex) return 'active'
     return 'disabled'
   }
 
-  // Get status configuration - only active status is highlighted, others are grey
   const getStatusConfig = (statusKey, state) => {
-    // Active state - highlighted with colors based on status
     if (state === 'active') {
       switch (statusKey) {
         case 'pending':
@@ -74,6 +66,37 @@ function OnboardingStatusTimeline({ status, className = '' }) {
             bgColor: 'bg-emerald-50',
             pulse: false,
           }
+        case 'approved_rejected':
+          if (currentStatus === 'approved') {
+            return {
+              circleBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
+              circleBorder: 'border-green-600',
+              circleShadow: 'shadow-lg shadow-green-200',
+              lineBg: 'bg-gradient-to-b from-green-500 to-emerald-600',
+              textColor: 'text-green-700',
+              bgColor: 'bg-green-50',
+              pulse: false,
+            }
+          } else if (currentStatus === 'rejected') {
+            return {
+              circleBg: 'bg-gradient-to-br from-red-400 to-red-600',
+              circleBorder: 'border-red-500',
+              circleShadow: 'shadow-lg shadow-red-200',
+              lineBg: 'bg-gradient-to-b from-red-400 to-red-600',
+              textColor: 'text-red-700',
+              bgColor: 'bg-red-50',
+              pulse: false,
+            }
+          }
+          return {
+            circleBg: 'bg-gradient-to-br from-gray-400 to-gray-500',
+            circleBorder: 'border-gray-500',
+            circleShadow: 'shadow-lg shadow-gray-200',
+            lineBg: 'bg-gradient-to-b from-gray-400 to-gray-500',
+            textColor: 'text-gray-700',
+            bgColor: 'bg-gray-50',
+            pulse: false,
+          }
         default:
           return {
             circleBg: 'bg-gradient-to-br from-gray-400 to-gray-500',
@@ -87,7 +110,6 @@ function OnboardingStatusTimeline({ status, className = '' }) {
       }
     }
 
-    // Completed and disabled states - both are faded grey
     return {
       circleBg: 'bg-gray-200',
       circleBorder: 'border-gray-300',
@@ -99,7 +121,6 @@ function OnboardingStatusTimeline({ status, className = '' }) {
     }
   }
 
-  // Get icon component
   const getStatusIcon = (iconType, state) => {
     if (state === 'completed') {
       return (
@@ -154,6 +175,50 @@ function OnboardingStatusTimeline({ status, className = '' }) {
           </svg>
         )
       }
+      if (iconType === 'approved_rejected') {
+        if (currentStatus === 'approved') {
+          return (
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={3}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+          )
+        } else if (currentStatus === 'rejected') {
+          return (
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={3}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          )
+        }
+        return (
+          <svg
+            className="w-4 h-4"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="6" />
+          </svg>
+        )
+      }
       return (
         <svg
           className="w-4 h-4"
@@ -165,7 +230,6 @@ function OnboardingStatusTimeline({ status, className = '' }) {
       )
     }
 
-    // Disabled state
     return (
       <svg
         className="w-3 h-3"
@@ -189,7 +253,6 @@ function OnboardingStatusTimeline({ status, className = '' }) {
       </div>
       
       <div className="relative pl-1">
-        {/* Vertical Timeline */}
         <div className="space-y-6">
           {statuses.map((statusItem, index) => {
             const state = getStatusState(index)
@@ -199,7 +262,6 @@ function OnboardingStatusTimeline({ status, className = '' }) {
             
             return (
               <div key={statusItem.key} className="relative flex items-start group">
-                {/* Timeline Line */}
                 {!isLast && (
                   <div
                     className={`absolute left-4 top-8 w-0.5 transition-all duration-300 ${
@@ -208,8 +270,7 @@ function OnboardingStatusTimeline({ status, className = '' }) {
                     style={{ height: 'calc(100% + 0.5rem)' }}
                   />
                 )}
-                
-                {/* Status Circle with professional styling */}
+
                 <div className="relative z-10">
                   <div
                     className={`
@@ -228,18 +289,41 @@ function OnboardingStatusTimeline({ status, className = '' }) {
                     </span>
                   </div>
                 </div>
-                
-                {/* Status Label with background */}
+
                 <div className="ml-4 flex-1 pt-1">
-                  <div className={`
-                    inline-block px-3 py-1.5 rounded-lg transition-all duration-300
-                    ${config.bgColor} ${config.textColor}
-                    ${isActive ? 'font-semibold shadow-sm' : 'font-medium'}
-                  `}>
-                    <p className={`text-xs tracking-wide ${config.textColor}`}>
-                      {statusItem.label}
-                    </p>
-                  </div>
+                  {statusItem.key === 'approved_rejected' && isActive ? (
+                    <div className={`
+                      inline-block px-3 py-1.5 rounded-lg transition-all duration-300
+                      ${config.bgColor}
+                      ${isActive ? 'font-semibold shadow-sm' : 'font-medium'}
+                    `}>
+                      <p className="text-xs tracking-wide">
+                        {currentStatus === 'approved' ? (
+                          <>
+                            <span className="text-green-700">Approved</span>
+                            <span className="text-gray-400">/Rejected</span>
+                          </>
+                        ) : currentStatus === 'rejected' ? (
+                          <>
+                            <span className="text-gray-400">Approved/</span>
+                            <span className="text-red-700">Rejected</span>
+                          </>
+                        ) : (
+                          <span className={config.textColor}>{statusItem.label}</span>
+                        )}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={`
+                      inline-block px-3 py-1.5 rounded-lg transition-all duration-300
+                      ${config.bgColor} ${config.textColor}
+                      ${isActive ? 'font-semibold shadow-sm' : 'font-medium'}
+                    `}>
+                      <p className={`text-xs tracking-wide ${config.textColor}`}>
+                        {statusItem.label}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )
