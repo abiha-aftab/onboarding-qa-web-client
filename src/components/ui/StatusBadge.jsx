@@ -12,8 +12,9 @@ function StatusBadge({ status, className = '' }) {
           borderColor: '#3b82f6',
         }
       case 'pending_review':
+      case 'inreview':
         return {
-          text: 'Pending Review',
+          text: 'In Review',
           bgColor: 'bg-yellow-100',
           textColor: 'text-yellow-800',
           borderColor: '#eab308',

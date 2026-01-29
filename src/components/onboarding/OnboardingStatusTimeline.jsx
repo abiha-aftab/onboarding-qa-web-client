@@ -19,7 +19,7 @@ function OnboardingStatusTimeline({ status, className = '' }) {
   const mapToTimelineStatus = status => {
     if (status === 'pending') return 'pending'
     if (status === 'in_progress' || status === 'inprogress') return 'in_progress'
-    if (status === 'completed' || status === 'COMPLETED' || status === 'pending_review') return 'completed'
+    if (status === 'completed' || status === 'COMPLETED' || status === 'pending_review' || status === 'inreview') return 'completed'
     if (status === 'approved' || status === 'rejected') return 'approved_rejected'
     return 'completed'
   }

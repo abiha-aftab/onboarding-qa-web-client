@@ -5,6 +5,7 @@ import {
   fetchAllOnboardingSteps,
   submitStepAnswer as submitStepAnswerService,
   getOnboardingStatus,
+  getOnboardingStatusById,
 } from '../../services/onboardingService'
 
 // Async thunks
@@ -123,6 +124,32 @@ export const fetchNextStep = createAsyncThunk(
   }
 )
 
+export const refreshOnboardingStatus = createAsyncThunk(
+  'onboarding/refreshStatus',
+  async (onboardingId, { rejectWithValue, getState }) => {
+    try {
+      const statusData = await getOnboardingStatusById(onboardingId)
+      
+      // Update the onboarding in the onboardings array
+      const state = getState()
+      const onboardingIndex = state.onboarding.onboardings.findIndex(
+        o => o.id === onboardingId
+      )
+      
+      return {
+        onboardingId,
+        statusData,
+        onboardingIndex,
+      }
+    } catch (error) {
+      return rejectWithValue({
+        message: error?.data?.detail || error?.message || 'Failed to refresh onboarding status',
+        status: error?.status,
+      })
+    }
+  }
+)
+
 const initialState = {
   onboardingStatus: null,
   onboardings: [],
@@ -208,6 +235,7 @@ const onboardingSlice = createSlice({
         state.onboardingSteps = []
         state.currentStepOrder = 1
         state.onboardingComplete = false
+        state.formData = {}
       })
       .addCase(selectOnboarding.rejected, (state, action) => {
         state.error = action.payload
@@ -252,8 +280,7 @@ const onboardingSlice = createSlice({
             })
           }
         })
-        // Merge with existing formData (user input takes precedence)
-        state.formData = { ...formData, ...state.formData }
+        state.formData = formData
         state.error = null
       })
       .addCase(fetchOnboardingSteps.rejected, (state, action) => {
@@ -279,7 +306,7 @@ const onboardingSlice = createSlice({
         }
 
         // Update selected onboarding if it exists and the ID matches
-        // Only update if status or completed_steps changed to avoid unnecessary re-renders
+        // Update if status, completed_steps, or review_reason changed
         if (state.selectedOnboarding) {
           const updated = action.payload.status.onboardings?.find(
             o => o.id === state.selectedOnboarding.id
@@ -287,7 +314,8 @@ const onboardingSlice = createSlice({
           if (
             updated &&
             (updated.status !== state.selectedOnboarding.status ||
-              updated.completed_steps !== state.selectedOnboarding.completed_steps)
+              updated.completed_steps !== state.selectedOnboarding.completed_steps ||
+              updated.review_reason !== state.selectedOnboarding.review_reason)
           ) {
             state.selectedOnboarding = updated
             // Navigate to next step after submission
@@ -327,6 +355,53 @@ const onboardingSlice = createSlice({
         }
       })
       .addCase(fetchNextStep.rejected, (state, action) => {
+        state.error = action.payload
+      })
+
+    // Refresh Onboarding Status
+    builder
+      .addCase(refreshOnboardingStatus.pending, state => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(refreshOnboardingStatus.fulfilled, (state, action) => {
+        state.loading = false
+        const { onboardingId, statusData, onboardingIndex } = action.payload
+        
+        // Update onboarding in the onboardings array
+        if (onboardingIndex !== -1) {
+          state.onboardings[onboardingIndex] = {
+            ...state.onboardings[onboardingIndex],
+            status: statusData.status,
+            review_reason: statusData.review_reason,
+          }
+        }
+        
+        // Update selected onboarding if it matches
+        if (state.selectedOnboarding && state.selectedOnboarding.id === onboardingId) {
+          state.selectedOnboarding = {
+            ...state.selectedOnboarding,
+            status: statusData.status,
+            review_reason: statusData.review_reason,
+          }
+        }
+        
+        // Update pending onboardings if needed
+        const pendingIndex = state.pendingOnboardings.findIndex(
+          o => o.id === onboardingId
+        )
+        if (pendingIndex !== -1) {
+          state.pendingOnboardings[pendingIndex] = {
+            ...state.pendingOnboardings[pendingIndex],
+            status: statusData.status,
+            review_reason: statusData.review_reason,
+          }
+        }
+        
+        state.error = null
+      })
+      .addCase(refreshOnboardingStatus.rejected, (state, action) => {
+        state.loading = false
         state.error = action.payload
       })
   },

@@ -9,8 +9,8 @@ import {
   setCurrentStepOrder,
   setOnboardingComplete,
   selectOnboarding,
+  refreshOnboardingStatus,
 } from '../store/slices/onboardingSlice'
-import { getOnboardingStatusById } from '../services/onboardingService'
 import { showToast } from '../store/slices/uiSlice'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import OnboardingList from '../components/onboarding/OnboardingList'
@@ -45,6 +45,7 @@ function OnboardingDetailPage() {
     (onboarding.status === 'completed' ||
       onboarding.status === 'COMPLETED' ||
       onboarding.status === 'pending_review' ||
+      onboarding.status === 'inreview' ||
       onboarding.status === 'approved' ||
       onboarding.status === 'rejected')
 
@@ -72,21 +73,19 @@ function OnboardingDetailPage() {
           console.log('Onboarding not in pending list, continuing anyway')
         }
 
-        let statusData = null
+        // Refresh onboarding status to get latest review_reason if available
         try {
-          statusData = await getOnboardingStatusById(onboardingId)
-          if (statusData) {
-            foundOnboarding.status = statusData.status
-            foundOnboarding.review_reason = statusData.review_reason
-          }
+          await dispatch(refreshOnboardingStatus(onboardingId)).unwrap()
         } catch (error) {
-          console.warn('Could not fetch status from endpoint, using cached status:', error)
+          console.warn('Could not refresh onboarding status:', error)
+          // Continue with existing data
         }
 
         const onboardingForSteps = foundOnboarding
         const isRejectedOrApproved =
           onboardingForSteps.status === 'approved' || onboardingForSteps.status === 'rejected'
 
+        // Don't load steps for rejected/approved - they will show status screens instead
         if (isRejectedOrApproved) {
           return
         }
@@ -96,7 +95,8 @@ function OnboardingDetailPage() {
         const isCompletedOrReview =
           onboardingForSteps.status === 'completed' ||
           onboardingForSteps.status === 'COMPLETED' ||
-          onboardingForSteps.status === 'pending_review'
+          onboardingForSteps.status === 'pending_review' ||
+          onboardingForSteps.status === 'inreview'
 
         let targetStepOrder
         if (stepOrder) {
@@ -156,6 +156,7 @@ function OnboardingDetailPage() {
       onboarding.status === 'completed' ||
       onboarding.status === 'COMPLETED' ||
       onboarding.status === 'pending_review' ||
+      onboarding.status === 'inreview' ||
       onboarding.status === 'approved' ||
       onboarding.status === 'rejected'
 
@@ -288,7 +289,11 @@ function OnboardingDetailPage() {
     )
   }
 
-  if (onboarding.status === 'rejected') {
+  // Get current status and review reason from Redux state
+  const currentStatus = onboarding?.status
+  const reviewReason = onboarding?.review_reason
+
+  if (currentStatus === 'rejected') {
     return (
       <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
         <div className="mb-6">
@@ -320,11 +325,25 @@ function OnboardingDetailPage() {
               >
                 Onboarding Rejected
               </h2>
-              <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
-                {onboarding.review_reason
-                  ? `This onboarding has been rejected. Reason: ${onboarding.review_reason}`
-                  : 'This onboarding has been rejected.'}
-              </p>
+              {reviewReason ? (
+                <div className="mb-6">
+                  <p className="text-base sm:text-lg mb-3" style={{ color: '#576472' }}>
+                    This onboarding has been rejected. Please review the reason below:
+                  </p>
+                  <div className="bg-white border-2 border-red-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="text-sm font-semibold text-red-800 mb-2">
+                      Rejection Reason:
+                    </h4>
+                    <p className="text-sm text-red-700 whitespace-pre-wrap">
+                      {reviewReason}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
+                  This onboarding has been rejected.
+                </p>
+              )}
               <button
                 onClick={() => navigate('/onboardings')}
                 className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg text-base font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md"
@@ -338,7 +357,7 @@ function OnboardingDetailPage() {
     )
   }
 
-  if (onboarding.status === 'approved') {
+  if (currentStatus === 'approved') {
     return (
       <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
         <div className="mb-6">
@@ -370,9 +389,25 @@ function OnboardingDetailPage() {
               >
                 Onboarding Approved
               </h2>
-              <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
-                Congratulations! Your onboarding has been approved successfully.
-              </p>
+              {reviewReason ? (
+                <div className="mb-6">
+                  <p className="text-base sm:text-lg mb-3" style={{ color: '#576472' }}>
+                    Congratulations! Your onboarding has been approved successfully.
+                  </p>
+                  <div className="bg-white border-2 border-green-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2">
+                      Approval Notes:
+                    </h4>
+                    <p className="text-sm text-green-700 whitespace-pre-wrap">
+                      {reviewReason}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
+                  Congratulations! Your onboarding has been approved successfully.
+                </p>
+              )}
               <button
                 onClick={() => navigate('/onboardings')}
                 className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg text-base font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md"
@@ -386,7 +421,7 @@ function OnboardingDetailPage() {
     )
   }
 
-  if (onboarding.status === 'pending_review') {
+  if (onboarding.status === 'pending_review' || onboarding.status === 'inreview') {
     return (
       <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
         <div className="mb-6">

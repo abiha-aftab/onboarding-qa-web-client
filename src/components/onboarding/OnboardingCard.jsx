@@ -5,7 +5,7 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
   const currentStep =
     onboarding.status === 'in_progress' || onboarding.status === 'inprogress'
       ? (onboarding.completed_steps || 0) + 1
-      : onboarding.status === 'pending_review'
+      : onboarding.status === 'pending_review' || onboarding.status === 'inreview'
         ? onboarding.completed_steps || onboarding.total_steps || 3
         : 1
   const totalSteps = onboarding.total_steps || 3
@@ -14,7 +14,7 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
 
   function getStatusColor(status) {
     if (status === 'in_progress' || status === 'inprogress') return '#3b82f6'
-    if (status === 'pending_review') return '#eab308'
+    if (status === 'pending_review' || status === 'inreview') return '#eab308'
     return '#f97316'
   }
 
@@ -57,10 +57,31 @@ function OnboardingCard({ onboarding, isActive, onSelect, onDeselect, disabled }
         </div>
       </div>
 
+      {/* Rejection reason */}
+      {onboarding.status === 'rejected' && onboarding.review_reason && (
+        <div className="mt-2 pt-2 border-t border-red-200">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+            <p className="text-xs font-semibold text-red-800 mb-1">Rejection Reason:</p>
+            <p className="text-xs text-red-700 line-clamp-2">{onboarding.review_reason}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Approval reason */}
+      {onboarding.status === 'approved' && onboarding.review_reason && (
+        <div className="mt-2 pt-2 border-t border-green-200">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+            <p className="text-xs font-semibold text-green-800 mb-1">Approval Notes:</p>
+            <p className="text-xs text-green-700 line-clamp-2">{onboarding.review_reason}</p>
+          </div>
+        </div>
+      )}
+
       {/* Step indicator */}
       {(onboarding.status === 'in_progress' ||
         onboarding.status === 'inprogress' ||
-        onboarding.status === 'pending_review') && (
+        onboarding.status === 'pending_review' ||
+        onboarding.status === 'inreview') && (
         <div className="mt-2 pt-2 border-t border-gray-200">
           <div className="flex items-center gap-1">
             {Array.from({ length: totalSteps }, (_, i) => {

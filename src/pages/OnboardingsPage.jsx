@@ -18,12 +18,13 @@ function OnboardingsPage() {
 
   // Sort onboardings: recent first (by created_at or id)
   const sortedOnboardings = [...onboardings].sort((a, b) => {
-    // First sort by status: pending > in_progress > pending_review > completed
+    // First sort by status: pending > in_progress > pending_review/inreview > completed
     const statusOrder = {
       pending: 0,
       in_progress: 1,
       inprogress: 1,
       pending_review: 2,
+      inreview: 2,
       completed: 3,
       COMPLETED: 3,
     }
@@ -51,10 +52,13 @@ function OnboardingsPage() {
       targetStep = (onboarding.completed_steps || 0) + 1
     } else if (
       onboarding.status === 'pending_review' ||
+      onboarding.status === 'inreview' ||
       onboarding.status === 'completed' ||
-      onboarding.status === 'COMPLETED'
+      onboarding.status === 'COMPLETED' ||
+      onboarding.status === 'approved' ||
+      onboarding.status === 'rejected'
     ) {
-      // View from the first step (completed onboardings are view-only)
+      // View from the first step (completed/submitted onboardings are view-only)
       targetStep = 1
     } else {
       // Pending onboarding - start from step 1
@@ -105,7 +109,7 @@ function OnboardingsPage() {
               const currentStep =
                 onboarding.status === 'in_progress' || onboarding.status === 'inprogress'
                   ? (onboarding.completed_steps || 0) + 1
-                  : onboarding.status === 'pending_review'
+                  : onboarding.status === 'pending_review' || onboarding.status === 'inreview'
                     ? onboarding.completed_steps || onboarding.total_steps || 3
                     : onboarding.status === 'completed' || onboarding.status === 'COMPLETED'
                       ? onboarding.total_steps || 3
@@ -149,6 +153,26 @@ function OnboardingsPage() {
                       </div>
                     </div>
 
+                    {/* Rejection reason */}
+                    {onboarding.status === 'rejected' && onboarding.review_reason && (
+                      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-red-200">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-red-800 mb-1">Rejection Reason:</p>
+                          <p className="text-xs text-red-700 line-clamp-3">{onboarding.review_reason}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Approval reason */}
+                    {onboarding.status === 'approved' && onboarding.review_reason && (
+                      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-green-200">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-green-800 mb-1">Approval Notes:</p>
+                          <p className="text-xs text-green-700 line-clamp-3">{onboarding.review_reason}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Progress section */}
                     <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
                       <div className="flex items-center justify-between mb-2">
@@ -174,7 +198,9 @@ function OnboardingsPage() {
                             !isCompleted &&
                             (onboarding.status === 'in_progress' ||
                               onboarding.status === 'inprogress')
-                          const isPendingReview = onboarding.status === 'pending_review'
+                          const isPendingReview = 
+                            onboarding.status === 'pending_review' || 
+                            onboarding.status === 'inreview'
 
                           return (
                             <div
@@ -219,14 +245,33 @@ function OnboardingsPage() {
                           handleOnboardingClick(onboarding)
                         }}
                       >
-                        {onboarding.status === 'completed' || onboarding.status === 'COMPLETED'
-                          ? 'View Details'
-                          : onboarding.status === 'pending_review'
-                            ? 'View Status'
-                            : onboarding.status === 'in_progress' ||
-                                onboarding.status === 'inprogress'
-                              ? 'Continue Onboarding'
-                              : 'Start Onboarding'}
+                        {(() => {
+                          // Check if all steps are completed
+                          const allStepsCompleted = 
+                            totalSteps > 0 && 
+                            (onboarding.completed_steps || 0) >= totalSteps
+                          
+                          // Check if form is in a final state (completed, submitted, approved, rejected)
+                          const isFinalState = 
+                            onboarding.status === 'completed' || 
+                            onboarding.status === 'COMPLETED' ||
+                            onboarding.status === 'pending_review' ||
+                            onboarding.status === 'inreview' ||
+                            onboarding.status === 'approved' ||
+                            onboarding.status === 'rejected' ||
+                            allStepsCompleted
+                          
+                          if (isFinalState) {
+                            return 'View Details'
+                          } else if (
+                            onboarding.status === 'in_progress' ||
+                            onboarding.status === 'inprogress'
+                          ) {
+                            return 'Continue'
+                          } else {
+                            return 'Start Onboarding'
+                          }
+                        })()}
                       </button>
                     </div>
                   </div>

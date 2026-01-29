@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import {
   fetchOnboardings,
   selectOnboarding,
@@ -13,6 +14,7 @@ import StepIndicator from '../form/StepIndicator'
 
 function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader = false }) {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { pendingOnboardings, selectedOnboarding, loading, onboardingSteps, currentStepOrder, onboardings } =
     useSelector(state => state.onboarding)
 
@@ -29,25 +31,39 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
   }, [dispatch])
 
   const handleSelectOnboarding = onboarding => {
+    // Don't allow clicking on completed/approved/rejected/pending_review/inreview onboardings
     if (
       onboarding.status === 'completed' ||
       onboarding.status === 'COMPLETED' ||
       onboarding.status === 'pending_review' ||
+      onboarding.status === 'inreview' ||
       onboarding.status === 'approved' ||
       onboarding.status === 'rejected'
     ) {
       return
     }
 
-    if (selectedOnboarding?.id === onboarding.id) {
-      dispatch(clearSelectedOnboarding())
+    // Determine which step to navigate to
+    let targetStep = 1
+
+    if (onboarding.status === 'in_progress' || onboarding.status === 'inprogress') {
+      // Resume from where user left off
+      targetStep = (onboarding.completed_steps || 0) + 1
     } else {
-      dispatch(selectOnboarding(onboarding.id))
+      // Pending onboarding - start from step 1
+      targetStep = 1
     }
+
+    
+    navigate(`/onboarding/${onboarding.id}/step/${targetStep}`)
   }
 
   const currentOnboarding = propOnboarding || selectedOnboarding || 
     (onboardings && onboardings.length > 0 ? onboardings[0] : null)
+
+  
+  const isApprovedOrRejected = currentOnboarding && 
+    (currentOnboarding.status === 'approved' || currentOnboarding.status === 'rejected')
 
   const getOnboardingTaskMessage = () => {
     if (!currentOnboarding) {
@@ -68,7 +84,7 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
 
     const status = currentOnboarding.status?.toLowerCase() || 'pending'
     
-    if (status === 'pending' || status === 'pending_review') {
+    if (status === 'pending' || status === 'pending_review' || status === 'inreview') {
       return {
         text: 'Onboarding Pending',
         icon: (
@@ -190,7 +206,7 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
         <div className="text-center py-8">
           <LoadingSpinner text="Loading..." />
         </div>
-      ) : pendingOnboardings.length > 0 ? (
+      ) : !isApprovedOrRejected && pendingOnboardings.length > 0 ? (
         <>
           {selectedOnboarding && onboardingSteps.length > 0 ? (
             <div className="hidden lg:block">
@@ -211,6 +227,7 @@ function OnboardingList({ currentOnboarding: propOnboarding = null, hideHeader =
                     onboarding.status === 'completed' ||
                     onboarding.status === 'COMPLETED' ||
                     onboarding.status === 'pending_review' ||
+                    onboarding.status === 'inreview' ||
                     onboarding.status === 'approved' ||
                     onboarding.status === 'rejected'
 

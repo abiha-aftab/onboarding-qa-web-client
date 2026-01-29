@@ -29,7 +29,8 @@ function DashboardPage() {
       if (
         firstOnboarding.status !== 'completed' &&
         firstOnboarding.status !== 'COMPLETED' &&
-        firstOnboarding.status !== 'pending_review'
+        firstOnboarding.status !== 'pending_review' &&
+        firstOnboarding.status !== 'inreview'
       ) {
         dispatch(selectOnboarding(firstOnboarding.id))
       }
