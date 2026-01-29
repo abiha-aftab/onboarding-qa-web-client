@@ -157,8 +157,12 @@ function OnboardingsPage() {
                     {onboarding.status === 'rejected' && onboarding.review_reason && (
                       <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-red-200">
                         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-red-800 mb-1">Rejection Reason:</p>
-                          <p className="text-xs text-red-700 line-clamp-3">{onboarding.review_reason}</p>
+                          <p className="text-xs font-semibold text-red-800 mb-1">
+                            Rejection Reason:
+                          </p>
+                          <p className="text-xs text-red-700 line-clamp-3">
+                            {onboarding.review_reason}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -167,8 +171,12 @@ function OnboardingsPage() {
                     {onboarding.status === 'approved' && onboarding.review_reason && (
                       <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-green-200">
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-green-800 mb-1">Approval Notes:</p>
-                          <p className="text-xs text-green-700 line-clamp-3">{onboarding.review_reason}</p>
+                          <p className="text-xs font-semibold text-green-800 mb-1">
+                            Approval Notes:
+                          </p>
+                          <p className="text-xs text-green-700 line-clamp-3">
+                            {onboarding.review_reason}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -198,8 +206,8 @@ function OnboardingsPage() {
                             !isCompleted &&
                             (onboarding.status === 'in_progress' ||
                               onboarding.status === 'inprogress')
-                          const isPendingReview = 
-                            onboarding.status === 'pending_review' || 
+                          const isPendingReview =
+                            onboarding.status === 'pending_review' ||
                             onboarding.status === 'inreview'
 
                           return (
@@ -247,20 +255,19 @@ function OnboardingsPage() {
                       >
                         {(() => {
                           // Check if all steps are completed
-                          const allStepsCompleted = 
-                            totalSteps > 0 && 
-                            (onboarding.completed_steps || 0) >= totalSteps
-                          
+                          const allStepsCompleted =
+                            totalSteps > 0 && (onboarding.completed_steps || 0) >= totalSteps
+
                           // Check if form is in a final state (completed, submitted, approved, rejected)
-                          const isFinalState = 
-                            onboarding.status === 'completed' || 
+                          const isFinalState =
+                            onboarding.status === 'completed' ||
                             onboarding.status === 'COMPLETED' ||
                             onboarding.status === 'pending_review' ||
                             onboarding.status === 'inreview' ||
                             onboarding.status === 'approved' ||
                             onboarding.status === 'rejected' ||
                             allStepsCompleted
-                          
+
                           if (isFinalState) {
                             return 'View Details'
                           } else if (

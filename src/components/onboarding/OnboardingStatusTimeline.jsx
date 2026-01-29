@@ -19,7 +19,13 @@ function OnboardingStatusTimeline({ status, className = '' }) {
   const mapToTimelineStatus = status => {
     if (status === 'pending') return 'pending'
     if (status === 'in_progress' || status === 'inprogress') return 'in_progress'
-    if (status === 'completed' || status === 'COMPLETED' || status === 'pending_review' || status === 'inreview') return 'completed'
+    if (
+      status === 'completed' ||
+      status === 'COMPLETED' ||
+      status === 'pending_review' ||
+      status === 'inreview'
+    )
+      return 'completed'
     if (status === 'approved' || status === 'rejected') return 'approved_rejected'
     return 'completed'
   }
@@ -131,11 +137,7 @@ function OnboardingStatusTimeline({ status, className = '' }) {
           viewBox="0 0 24 24"
           strokeWidth={3}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       )
     }
@@ -201,30 +203,18 @@ function OnboardingStatusTimeline({ status, className = '' }) {
               viewBox="0 0 24 24"
               strokeWidth={3}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           )
         }
         return (
-          <svg
-            className="w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="6" />
           </svg>
         )
       }
       return (
-        <svg
-          className="w-4 h-4"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="6" />
         </svg>
       )
@@ -251,7 +241,7 @@ function OnboardingStatusTimeline({ status, className = '' }) {
           Status Timeline
         </h3>
       </div>
-      
+
       <div className="relative pl-1">
         <div className="space-y-6">
           {statuses.map((statusItem, index) => {
@@ -259,7 +249,7 @@ function OnboardingStatusTimeline({ status, className = '' }) {
             const config = getStatusConfig(statusItem.key, state)
             const isLast = index === statuses.length - 1
             const isActive = state === 'active'
-            
+
             return (
               <div key={statusItem.key} className="relative flex items-start group">
                 {!isLast && (
@@ -292,11 +282,13 @@ function OnboardingStatusTimeline({ status, className = '' }) {
 
                 <div className="ml-4 flex-1 pt-1">
                   {statusItem.key === 'approved_rejected' && isActive ? (
-                    <div className={`
+                    <div
+                      className={`
                       inline-block px-3 py-1.5 rounded-lg transition-all duration-300
                       ${config.bgColor}
                       ${isActive ? 'font-semibold shadow-sm' : 'font-medium'}
-                    `}>
+                    `}
+                    >
                       <p className="text-xs tracking-wide">
                         {currentStatus === 'approved' ? (
                           <>
@@ -314,11 +306,13 @@ function OnboardingStatusTimeline({ status, className = '' }) {
                       </p>
                     </div>
                   ) : (
-                    <div className={`
+                    <div
+                      className={`
                       inline-block px-3 py-1.5 rounded-lg transition-all duration-300
                       ${config.bgColor} ${config.textColor}
                       ${isActive ? 'font-semibold shadow-sm' : 'font-medium'}
-                    `}>
+                    `}
+                    >
                       <p className={`text-xs tracking-wide ${config.textColor}`}>
                         {statusItem.label}
                       </p>
@@ -335,4 +329,3 @@ function OnboardingStatusTimeline({ status, className = '' }) {
 }
 
 export default OnboardingStatusTimeline
-

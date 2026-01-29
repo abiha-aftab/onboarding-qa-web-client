@@ -295,7 +295,9 @@ function OnboardingDetailPage() {
 
   if (currentStatus === 'rejected') {
     return (
-      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -331,12 +333,8 @@ function OnboardingDetailPage() {
                     This onboarding has been rejected. Please review the reason below:
                   </p>
                   <div className="bg-white border-2 border-red-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
-                    <h4 className="text-sm font-semibold text-red-800 mb-2">
-                      Rejection Reason:
-                    </h4>
-                    <p className="text-sm text-red-700 whitespace-pre-wrap">
-                      {reviewReason}
-                    </p>
+                    <h4 className="text-sm font-semibold text-red-800 mb-2">Rejection Reason:</h4>
+                    <p className="text-sm text-red-700 whitespace-pre-wrap">{reviewReason}</p>
                   </div>
                 </div>
               ) : (
@@ -359,7 +357,9 @@ function OnboardingDetailPage() {
 
   if (currentStatus === 'approved') {
     return (
-      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -395,12 +395,8 @@ function OnboardingDetailPage() {
                     Congratulations! Your onboarding has been approved successfully.
                   </p>
                   <div className="bg-white border-2 border-green-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
-                    <h4 className="text-sm font-semibold text-green-800 mb-2">
-                      Approval Notes:
-                    </h4>
-                    <p className="text-sm text-green-700 whitespace-pre-wrap">
-                      {reviewReason}
-                    </p>
+                    <h4 className="text-sm font-semibold text-green-800 mb-2">Approval Notes:</h4>
+                    <p className="text-sm text-green-700 whitespace-pre-wrap">{reviewReason}</p>
                   </div>
                 </div>
               ) : (
@@ -423,7 +419,9 @@ function OnboardingDetailPage() {
 
   if (onboarding.status === 'pending_review' || onboarding.status === 'inreview') {
     return (
-      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -476,7 +474,9 @@ function OnboardingDetailPage() {
     onboarding.status === 'COMPLETED'
   ) {
     return (
-      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -525,7 +525,9 @@ function OnboardingDetailPage() {
 
   if (onboardingSteps.length === 0) {
     return (
-      <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />

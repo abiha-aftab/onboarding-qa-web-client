@@ -60,7 +60,6 @@ function StatusBadge({ status, className = '' }) {
     >
       {config.text}
     </span>
-  ) 
-
+  )
 }
 export default StatusBadge

@@ -60,7 +60,10 @@ function OnboardingFormContainer() {
 
           // Don't call fetchOnboardings here to avoid infinite loop
           // The steps are already loaded, status will be updated when step is submitted
-        } else if (selectedOnboarding.status === 'pending_review' || selectedOnboarding.status === 'inreview') {
+        } else if (
+          selectedOnboarding.status === 'pending_review' ||
+          selectedOnboarding.status === 'inreview'
+        ) {
           // Load all completed steps
           const completedSteps =
             selectedOnboarding.completed_steps || selectedOnboarding.total_steps || 3

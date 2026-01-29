@@ -129,13 +129,11 @@ export const refreshOnboardingStatus = createAsyncThunk(
   async (onboardingId, { rejectWithValue, getState }) => {
     try {
       const statusData = await getOnboardingStatusById(onboardingId)
-      
+
       // Update the onboarding in the onboardings array
       const state = getState()
-      const onboardingIndex = state.onboarding.onboardings.findIndex(
-        o => o.id === onboardingId
-      )
-      
+      const onboardingIndex = state.onboarding.onboardings.findIndex(o => o.id === onboardingId)
+
       return {
         onboardingId,
         statusData,
@@ -367,7 +365,7 @@ const onboardingSlice = createSlice({
       .addCase(refreshOnboardingStatus.fulfilled, (state, action) => {
         state.loading = false
         const { onboardingId, statusData, onboardingIndex } = action.payload
-        
+
         // Update onboarding in the onboardings array
         if (onboardingIndex !== -1) {
           state.onboardings[onboardingIndex] = {
@@ -376,7 +374,7 @@ const onboardingSlice = createSlice({
             review_reason: statusData.review_reason,
           }
         }
-        
+
         // Update selected onboarding if it matches
         if (state.selectedOnboarding && state.selectedOnboarding.id === onboardingId) {
           state.selectedOnboarding = {
@@ -385,11 +383,9 @@ const onboardingSlice = createSlice({
             review_reason: statusData.review_reason,
           }
         }
-        
+
         // Update pending onboardings if needed
-        const pendingIndex = state.pendingOnboardings.findIndex(
-          o => o.id === onboardingId
-        )
+        const pendingIndex = state.pendingOnboardings.findIndex(o => o.id === onboardingId)
         if (pendingIndex !== -1) {
           state.pendingOnboardings[pendingIndex] = {
             ...state.pendingOnboardings[pendingIndex],
@@ -397,7 +393,7 @@ const onboardingSlice = createSlice({
             review_reason: statusData.review_reason,
           }
         }
-        
+
         state.error = null
       })
       .addCase(refreshOnboardingStatus.rejected, (state, action) => {
