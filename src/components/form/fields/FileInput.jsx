@@ -21,9 +21,9 @@ function FileInput({
         name={fieldName}
         onChange={handleChange}
         onBlur={field.onBlur}
-        className={`${baseInputClasses} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFD350] file:text-[#0F5E7B] hover:file:bg-[#FFE066] ${readOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+        className={`${baseInputClasses} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFD350] file:text-[#0F5E7B] hover:file:bg-[#FFE066] ${readOnly ? 'opacity-50' : ''}`}
         style={inputStyle}
-        accept="image/*"
+        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
         disabled={readOnly}
         aria-required={question.is_required}
         aria-invalid={meta.touched && meta.error ? 'true' : 'false'}
@@ -31,7 +31,10 @@ function FileInput({
       />
       {field.value && (
         <p className="mt-2 text-xs sm:text-sm truncate" style={{ color: '#576472' }}>
-          Selected: {field.value.name || 'File selected'}
+          Selected:{' '}
+          {field.value.name ||
+            field.value.file_name ||
+            (typeof field.value === 'string' ? field.value.split('/').pop() : 'File selected')}
         </p>
       )}
       {meta.touched && meta.error && (

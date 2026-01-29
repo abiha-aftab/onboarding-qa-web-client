@@ -46,7 +46,7 @@ function DateInput({
         onBlur={field.onBlur}
         onFocus={readOnly ? undefined : handleFocus}
         onClick={readOnly ? undefined : handleFocus}
-        className={`${baseInputClasses} ${readOnly ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`${baseInputClasses} ${readOnly ? 'bg-gray-100' : ''}`}
         style={{ ...inputStyle, position: 'relative', zIndex: 10 }}
         disabled={readOnly}
         readOnly={readOnly}

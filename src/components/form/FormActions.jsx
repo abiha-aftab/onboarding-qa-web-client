@@ -11,7 +11,7 @@ function FormActions({ isFirstStep, isLastStep, isSubmitting, hasErrors, onBack,
           className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold shadow-md transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial ${
             isSubmitting
               ? 'bg-gray-200 text-gray-400'
-              : 'bg-gray-100 text-[#0F5E7B] hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98]'
+              : 'bg-black text-white hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98]'
           }`}
         >
           <svg
@@ -27,7 +27,7 @@ function FormActions({ isFirstStep, isLastStep, isSubmitting, hasErrors, onBack,
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <span className="hidden sm:inline">Back</span>
+          <span>Back</span>
         </button>
       )}
 

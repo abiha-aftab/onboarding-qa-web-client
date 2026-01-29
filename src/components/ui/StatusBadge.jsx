@@ -12,8 +12,9 @@ function StatusBadge({ status, className = '' }) {
           borderColor: '#3b82f6',
         }
       case 'pending_review':
+      case 'inreview':
         return {
-          text: 'Pending Review',
+          text: 'In Review',
           bgColor: 'bg-yellow-100',
           textColor: 'text-yellow-800',
           borderColor: '#eab308',
@@ -24,6 +25,20 @@ function StatusBadge({ status, className = '' }) {
           bgColor: 'bg-green-100',
           textColor: 'text-green-800',
           borderColor: '#22c55e',
+        }
+      case 'approved':
+        return {
+          text: 'Approved',
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800',
+          borderColor: '#16a34a',
+        }
+      case 'rejected':
+        return {
+          text: 'Rejected',
+          bgColor: 'bg-red-100',
+          textColor: 'text-red-800',
+          borderColor: '#ef4444',
         }
       case 'pending':
       default:
@@ -47,5 +62,4 @@ function StatusBadge({ status, className = '' }) {
     </span>
   )
 }
-
 export default StatusBadge

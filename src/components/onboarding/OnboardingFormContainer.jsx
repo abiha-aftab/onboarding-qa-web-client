@@ -6,6 +6,7 @@ import {
   updateFormData,
   setOnboardingComplete,
   fetchOnboardings,
+  setCurrentStepOrder,
 } from '../../store/slices/onboardingSlice'
 import { showToast } from '../../store/slices/uiSlice'
 import MultiStepForm from '../MultiStepForm'
@@ -59,7 +60,10 @@ function OnboardingFormContainer() {
 
           // Don't call fetchOnboardings here to avoid infinite loop
           // The steps are already loaded, status will be updated when step is submitted
-        } else if (selectedOnboarding.status === 'pending_review') {
+        } else if (
+          selectedOnboarding.status === 'pending_review' ||
+          selectedOnboarding.status === 'inreview'
+        ) {
           // Load all completed steps
           const completedSteps =
             selectedOnboarding.completed_steps || selectedOnboarding.total_steps || 3
@@ -154,6 +158,16 @@ function OnboardingFormContainer() {
     [dispatch]
   )
 
+  // Handle step changes (for back/forward navigation)
+  const handleStepChange = useCallback(
+    (stepIndex, step) => {
+      if (step && step.order) {
+        dispatch(setCurrentStepOrder(step.order))
+      }
+    },
+    [dispatch]
+  )
+
   // Handle final form submission
   const handleFinalSubmit = useCallback(
     // eslint-disable-next-line no-unused-vars
@@ -181,7 +195,7 @@ function OnboardingFormContainer() {
     return null
   }
 
-  if (selectedOnboarding.status === 'pending_review') {
+  if (selectedOnboarding.status === 'pending_review' || selectedOnboarding.status === 'inreview') {
     return (
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-300">
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 px-6 py-8 text-center">
@@ -330,6 +344,7 @@ function OnboardingFormContainer() {
         currentStepOrder={currentStepOrder}
         initialValues={formData}
         onFormDataChange={handleFormDataChange}
+        onStepChange={handleStepChange}
       />
     </div>
   )

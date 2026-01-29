@@ -9,6 +9,7 @@ import {
   setCurrentStepOrder,
   setOnboardingComplete,
   selectOnboarding,
+  refreshOnboardingStatus,
 } from '../store/slices/onboardingSlice'
 import { showToast } from '../store/slices/uiSlice'
 import DashboardLayout from '../components/layout/DashboardLayout'
@@ -37,17 +38,17 @@ function OnboardingDetailPage() {
     loading,
   } = useSelector(state => state.onboarding)
 
-  // Find onboarding from list or use selected one
   const onboarding = selectedOnboarding || onboardings.find(o => o.id === onboardingId)
 
-  // Determine if this onboarding is read-only (completed or pending_review)
   const isReadOnly =
     onboarding &&
     (onboarding.status === 'completed' ||
       onboarding.status === 'COMPLETED' ||
-      onboarding.status === 'pending_review')
+      onboarding.status === 'pending_review' ||
+      onboarding.status === 'inreview' ||
+      onboarding.status === 'approved' ||
+      onboarding.status === 'rejected')
 
-  // Load onboarding and steps
   useEffect(() => {
     const loadOnboardingData = async () => {
       if (!onboardingId || isNaN(onboardingId)) {
@@ -57,41 +58,72 @@ function OnboardingDetailPage() {
       }
 
       try {
-        // Fetch all onboardings first
         const fetchResult = await dispatch(fetchOnboardings()).unwrap()
         const allOnboardings = fetchResult.status?.onboardings || []
 
-        // Find the onboarding from the fetched list
         const foundOnboarding = allOnboardings.find(o => o.id === onboardingId)
 
         if (!foundOnboarding) {
           throw new Error(`Onboarding with ID ${onboardingId} not found`)
         }
 
-        // Select the onboarding to ensure it's highlighted in the sidebar
-        // This may fail if it's not in pending list, but that's okay
         try {
           await dispatch(selectOnboarding(onboardingId)).unwrap()
         } catch {
-          // Selection might fail for completed/review onboardings - that's fine
-          // We'll still proceed with loading steps
           console.log('Onboarding not in pending list, continuing anyway')
         }
 
-        // Use the onboarding we found
+        // Refresh onboarding status to get latest review_reason if available
+        try {
+          await dispatch(refreshOnboardingStatus(onboardingId)).unwrap()
+        } catch (error) {
+          console.warn('Could not refresh onboarding status:', error)
+          // Continue with existing data
+        }
+
         const onboardingForSteps = foundOnboarding
+        const isRejectedOrApproved =
+          onboardingForSteps.status === 'approved' || onboardingForSteps.status === 'rejected'
+
+        // Don't load steps for rejected/approved - they will show status screens instead
+        if (isRejectedOrApproved) {
+          return
+        }
+
         const completedSteps = onboardingForSteps.completed_steps || 0
+        const totalSteps = onboardingForSteps.total_steps || 3
         const isCompletedOrReview =
           onboardingForSteps.status === 'completed' ||
           onboardingForSteps.status === 'COMPLETED' ||
-          onboardingForSteps.status === 'pending_review'
+          onboardingForSteps.status === 'pending_review' ||
+          onboardingForSteps.status === 'inreview'
 
-        const targetStepOrder =
-          stepOrder ||
-          (isCompletedOrReview
-            ? onboardingForSteps.completed_steps || onboardingForSteps.total_steps || 1
-            : Math.min(completedSteps + 1, onboardingForSteps.total_steps || 3)) ||
-          1
+        let targetStepOrder
+        if (stepOrder) {
+          if (isCompletedOrReview) {
+            targetStepOrder = Math.min(Math.max(1, stepOrder), totalSteps)
+          } else {
+            const maxAllowedStep = completedSteps + 1
+            if (stepOrder > maxAllowedStep) {
+              const correctStep = Math.min(maxAllowedStep, totalSteps)
+              dispatch(
+                showToast({
+                  type: 'warning',
+                  message: `Please complete step ${completedSteps + 1} first before accessing future steps.`,
+                })
+              )
+              navigate(`/onboarding/${onboardingId}/step/${correctStep}`, { replace: true })
+              return
+            }
+            targetStepOrder = Math.min(Math.max(1, stepOrder), totalSteps)
+          }
+        } else {
+          if (isCompletedOrReview) {
+            targetStepOrder = completedSteps || totalSteps || 1
+          } else {
+            targetStepOrder = Math.min(completedSteps + 1, totalSteps) || 1
+          }
+        }
 
         await dispatch(
           fetchOnboardingSteps({
@@ -115,18 +147,50 @@ function OnboardingDetailPage() {
     loadOnboardingData()
   }, [onboardingId, stepOrder, dispatch, navigate])
 
-  // Update current step order when stepId changes
   useEffect(() => {
-    if (stepOrder && stepOrder !== currentStepOrder) {
+    if (!onboarding || !stepOrder) return
+
+    const completedSteps = onboarding.completed_steps || 0
+    const totalSteps = onboarding.total_steps || onboardingSteps.length || 3
+    const isCompletedOrReview =
+      onboarding.status === 'completed' ||
+      onboarding.status === 'COMPLETED' ||
+      onboarding.status === 'pending_review' ||
+      onboarding.status === 'inreview' ||
+      onboarding.status === 'approved' ||
+      onboarding.status === 'rejected'
+
+    if (!isCompletedOrReview) {
+      const maxAllowedStep = completedSteps + 1
+      if (stepOrder > maxAllowedStep) {
+        const correctStep = Math.min(maxAllowedStep, totalSteps)
+        dispatch(
+          showToast({
+            type: 'warning',
+            message: `Please complete step ${completedSteps + 1} first before accessing future steps.`,
+          })
+        )
+        navigate(`/onboarding/${onboardingId}/step/${correctStep}`, { replace: true })
+        return
+      }
+    }
+
+    if (stepOrder !== currentStepOrder && stepOrder >= 1 && stepOrder <= totalSteps) {
       dispatch(setCurrentStepOrder(stepOrder))
     }
-  }, [stepOrder, currentStepOrder, dispatch])
+  }, [
+    stepOrder,
+    currentStepOrder,
+    dispatch,
+    onboarding,
+    onboardingSteps.length,
+    onboardingId,
+    navigate,
+  ])
 
-  // Handle step submission
   const handleStepSubmit = useCallback(
     async (onboardingId, stepId, formValues, stepQuestions) => {
       if (isReadOnly) {
-        // Don't allow submission if read-only
         return
       }
 
@@ -154,7 +218,6 @@ function OnboardingDetailPage() {
     [dispatch, isReadOnly]
   )
 
-  // Handle step completion - navigate to next step or complete
   const handleStepComplete = useCallback(
     // eslint-disable-next-line no-unused-vars
     async (_stepIndex, _step, _values) => {
@@ -163,13 +226,10 @@ function OnboardingDetailPage() {
       const nextStepOrder = currentStepOrder + 1
       const totalSteps = onboarding.total_steps || onboardingSteps.length
 
-      // Check if we're on the last step
       if (nextStepOrder > totalSteps) {
-        // All steps completed
         dispatch(setOnboardingComplete(true))
         await dispatch(fetchOnboardings())
       } else {
-        // Navigate to next step
         await dispatch(fetchOnboardings())
         navigate(`/onboarding/${onboardingId}/step/${nextStepOrder}`)
       }
@@ -177,7 +237,15 @@ function OnboardingDetailPage() {
     [dispatch, onboarding, currentStepOrder, onboardingSteps.length, onboardingId, navigate]
   )
 
-  // Handle form data changes
+  const handleStepBack = useCallback(
+    // eslint-disable-next-line no-unused-vars
+    (prevStepOrder, _prevStep) => {
+      if (!onboarding || prevStepOrder < 1) return
+      navigate(`/onboarding/${onboardingId}/step/${prevStepOrder}`)
+    },
+    [onboarding, onboardingId, navigate]
+  )
+
   const handleFormDataChange = useCallback(
     newFormData => {
       if (!isReadOnly) {
@@ -187,7 +255,6 @@ function OnboardingDetailPage() {
     [dispatch, isReadOnly]
   )
 
-  // Handle final form submission
   const handleFinalSubmit = useCallback(
     // eslint-disable-next-line no-unused-vars
     async _values => {
@@ -210,10 +277,9 @@ function OnboardingDetailPage() {
     [dispatch, onboarding, isReadOnly]
   )
 
-  // Show loading state
   if (loading || loadingSteps || !onboarding) {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout sidebar={<OnboardingList hideHeader={true} />}>
         <div className="mb-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <LoadingSpinner size="lg" text="Loading onboarding..." />
@@ -223,10 +289,139 @@ function OnboardingDetailPage() {
     )
   }
 
-  // Show pending review message
-  if (onboarding.status === 'pending_review') {
+  // Get current status and review reason from Redux state
+  const currentStatus = onboarding?.status
+  const reviewReason = onboarding?.review_reason
+
+  if (currentStatus === 'rejected') {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
+        <div className="mb-6">
+          {alerts.map(alert => (
+            <Alert key={alert.id} alert={alert} />
+          ))}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-red-300">
+            <div className="bg-gradient-to-r from-red-50 to-rose-50 px-6 py-8 text-center">
+              <div className="mb-4">
+                <div className="w-20 h-20 mx-auto bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h2
+                className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
+                style={{ color: '#0F5E7B' }}
+              >
+                Onboarding Rejected
+              </h2>
+              {reviewReason ? (
+                <div className="mb-6">
+                  <p className="text-base sm:text-lg mb-3" style={{ color: '#576472' }}>
+                    This onboarding has been rejected. Please review the reason below:
+                  </p>
+                  <div className="bg-white border-2 border-red-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="text-sm font-semibold text-red-800 mb-2">Rejection Reason:</h4>
+                    <p className="text-sm text-red-700 whitespace-pre-wrap">{reviewReason}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
+                  This onboarding has been rejected.
+                </p>
+              )}
+              <button
+                onClick={() => navigate('/onboardings')}
+                className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg text-base font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md"
+              >
+                Back to Onboardings
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (currentStatus === 'approved') {
+    return (
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
+        <div className="mb-6">
+          {alerts.map(alert => (
+            <Alert key={alert.id} alert={alert} />
+          ))}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-green-300">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-8 text-center">
+              <div className="mb-4">
+                <div className="w-20 h-20 mx-auto bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h2
+                className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
+                style={{ color: '#0F5E7B' }}
+              >
+                Onboarding Approved
+              </h2>
+              {reviewReason ? (
+                <div className="mb-6">
+                  <p className="text-base sm:text-lg mb-3" style={{ color: '#576472' }}>
+                    Congratulations! Your onboarding has been approved successfully.
+                  </p>
+                  <div className="bg-white border-2 border-green-200 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2">Approval Notes:</h4>
+                    <p className="text-sm text-green-700 whitespace-pre-wrap">{reviewReason}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base sm:text-lg mb-6" style={{ color: '#576472' }}>
+                  Congratulations! Your onboarding has been approved successfully.
+                </p>
+              )}
+              <button
+                onClick={() => navigate('/onboardings')}
+                className="px-6 py-3 bg-[#0F5E7B] text-white rounded-lg text-base font-semibold hover:bg-[#0d4d66] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md"
+              >
+                Back to Onboardings
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (onboarding.status === 'pending_review' || onboarding.status === 'inreview') {
+    return (
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -273,14 +468,15 @@ function OnboardingDetailPage() {
     )
   }
 
-  // Show completed message
   if (
     onboardingComplete ||
     onboarding.status === 'completed' ||
     onboarding.status === 'COMPLETED'
   ) {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -327,10 +523,11 @@ function OnboardingDetailPage() {
     )
   }
 
-  // Show steps
   if (onboardingSteps.length === 0) {
     return (
-      <DashboardLayout sidebar={<OnboardingList />}>
+      <DashboardLayout
+        sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}
+      >
         <div className="mb-6">
           {alerts.map(alert => (
             <Alert key={alert.id} alert={alert} />
@@ -354,7 +551,6 @@ function OnboardingDetailPage() {
     )
   }
 
-  // Calculate completed steps
   const completedSteps = new Set()
   if (onboarding && onboardingSteps.length > 0) {
     const completedCount = onboarding.completed_steps || 0
@@ -363,20 +559,18 @@ function OnboardingDetailPage() {
     }
   }
 
-  // Ensure currentStepOrder is within valid range
   const validCurrentStepOrder = Math.max(
     1,
     Math.min(currentStepOrder || stepOrder || 1, onboardingSteps.length)
   )
 
   return (
-    <DashboardLayout sidebar={<OnboardingList />}>
+    <DashboardLayout sidebar={<OnboardingList currentOnboarding={onboarding} hideHeader={true} />}>
       <div className="mb-6">
         {alerts.map(alert => (
           <Alert key={alert.id} alert={alert} />
         ))}
 
-        {/* Onboarding Header */}
         <div className="bg-white rounded-xl shadow-lg mb-4 sm:mb-6 border-2 border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-cyan-50 to-yellow-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
@@ -402,31 +596,32 @@ function OnboardingDetailPage() {
           </div>
         </div>
 
-        {/* Horizontal Progress Indicator for Mobile */}
-        <div className="lg:hidden mb-4">
-          <StepIndicator
-            totalSteps={onboarding.total_steps || onboardingSteps.length}
-            currentStepOrder={validCurrentStepOrder}
-            completedSteps={completedSteps}
-            steps={onboardingSteps}
-            horizontal={true}
-          />
-        </div>
+        <div>
+          <div className="lg:hidden mb-4">
+            <StepIndicator
+              totalSteps={onboarding.total_steps || onboardingSteps.length}
+              currentStepOrder={validCurrentStepOrder}
+              completedSteps={completedSteps}
+              steps={onboardingSteps}
+              horizontal={true}
+            />
+          </div>
 
-        {/* MultiStepForm - will be read-only if onboarding is completed/pending_review */}
-        <div className="mt-4 sm:mt-6">
-          <MultiStepForm
-            steps={onboardingSteps}
-            onboardingId={onboarding.id}
-            onSubmitStep={handleStepSubmit}
-            onStepComplete={handleStepComplete}
-            onSubmit={handleFinalSubmit}
-            totalSteps={onboarding.total_steps || onboardingSteps.length}
-            currentStepOrder={validCurrentStepOrder}
-            initialValues={formData}
-            onFormDataChange={handleFormDataChange}
-            readOnly={isReadOnly}
-          />
+          <div className="mt-4 sm:mt-6 lg:mt-0">
+            <MultiStepForm
+              steps={onboardingSteps}
+              onboardingId={onboarding.id}
+              onSubmitStep={handleStepSubmit}
+              onStepComplete={handleStepComplete}
+              onStepBack={handleStepBack}
+              onSubmit={handleFinalSubmit}
+              totalSteps={onboarding.total_steps || onboardingSteps.length}
+              currentStepOrder={validCurrentStepOrder}
+              initialValues={formData}
+              onFormDataChange={handleFormDataChange}
+              readOnly={isReadOnly}
+            />
+          </div>
         </div>
       </div>
     </DashboardLayout>

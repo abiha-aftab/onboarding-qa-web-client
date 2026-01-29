@@ -9,7 +9,7 @@ function CheckboxInput({ field, meta, fieldName, question, handleChange, readOnl
           checked={field.value || false}
           onChange={handleChange}
           onBlur={field.onBlur}
-          className={`w-5 h-5 text-[#0F5E7B] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#FFD350] focus:ring-offset-0 ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-5 h-5 text-[#0F5E7B] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#FFD350] focus:ring-offset-0 ${readOnly ? 'opacity-50' : ''}`}
           disabled={readOnly}
           aria-required={question.is_required}
           aria-invalid={meta.touched && meta.error ? 'true' : 'false'}

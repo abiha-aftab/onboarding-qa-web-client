@@ -15,6 +15,7 @@ function MultiStepForm({
   initialValues: providedInitialValues,
   onStepChange,
   onStepComplete,
+  onStepBack,
   onboardingId,
   totalSteps = 3,
   currentStepOrder: propCurrentStepOrder,
@@ -351,8 +352,11 @@ function MultiStepForm({
       }
 
       // Save current form values to parent state before going back
-      if (currentFormValues && onFormDataChange) {
-        onFormDataChange(currentFormValues)
+      // This ensures data is preserved when navigating back
+      if (currentFormValues) {
+        if (onFormDataChange) {
+          onFormDataChange(currentFormValues)
+        }
       }
 
       const prevOrder = currentStepOrder - 1
@@ -369,9 +373,14 @@ function MultiStepForm({
         if (onStepChange) {
           onStepChange(prevIndex, prevStep)
         }
+
+        // Trigger navigation callback to update URL
+        if (onStepBack) {
+          onStepBack(prevOrder, prevStep)
+        }
       }
     },
-    [currentStepOrder, normalizedSteps, onStepChange, onFormDataChange]
+    [currentStepOrder, normalizedSteps, onStepChange, onFormDataChange, onStepBack]
   )
 
   const handleSubmit = useCallback(
